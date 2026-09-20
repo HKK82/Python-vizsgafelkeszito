@@ -1,6 +1,7 @@
 const STATE_KEY = 'python_exam_trainer_state_v2';
 const API_KEY_SESSION = 'python_exam_trainer_api_session_v2';
 const API_KEY_LOCAL = 'python_exam_trainer_api_local_v2';
+const CURRICULUM_REVISION = '2026-09-20-sequencing-v1';
 
 const memoryFallback = {};
 
@@ -35,7 +36,33 @@ function normalizeProfile(profile) {
   profile.examSessions ||= {};
   profile.lastViewed ||= 0;
   profile.updatedAt ||= new Date().toISOString();
+  profile.curriculumRevision ||= '';
   return profile;
+}
+
+function applyCurriculumRevision(profile, taskOrder = []) {
+  normalizeProfile(profile);
+  if (profile.curriculumRevision === CURRICULUM_REVISION) return false;
+
+  // A 4. lecke korábbi változata olyan műveleteket kért, amelyeket csak az 5. leckében tanítunk.
+  // Ezért csak ezt a három feladatot nyitjuk újra; a jegyzeteket és a többi haladást megtartjuk.
+  for (const key of ['4.1', '4.2', '4.3']) {
+    delete profile.completed[key];
+    delete profile.attempts[key];
+    delete profile.drafts[key];
+    delete profile.viewedSolutions[key];
+  }
+
+  if (Array.isArray(taskOrder) && taskOrder.length) {
+    let frontier = 0;
+    while (frontier < taskOrder.length && profile.completed?.[taskOrder[frontier]]) frontier += 1;
+    profile.frontier = frontier;
+    profile.lastViewed = Math.min(profile.lastViewed || 0, frontier);
+  }
+
+  profile.curriculumRevision = CURRICULUM_REVISION;
+  profile.updatedAt = new Date().toISOString();
+  return true;
 }
 
 export class ProgressStore {
@@ -84,6 +111,7 @@ export class ProgressStore {
       normalizeProfile(this.state.profiles[key]);
       this.state.profiles[key].displayName = displayName.trim() || this.state.profiles[key].displayName;
     }
+    applyCurriculumRevision(this.state.profiles[key], this.taskOrder);
     this.state.currentStudentKey = key;
     this.persist();
     return this.state.profiles[key];
@@ -351,6 +379,7 @@ export class ProgressStore {
     }
     const profile = payload.profile;
     normalizeProfile(profile);
+    applyCurriculumRevision(profile, this.taskOrder);
     profile.updatedAt = new Date().toISOString();
     const key = normalizeStudentKey(profile.displayName);
     this.state.profiles[key] = profile;
