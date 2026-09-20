@@ -144,6 +144,9 @@ h3 { font-size: 14px; color: #c9d7ee; margin: 0 0 6px; }
 
 /* v5.1: leckenavigáció */
 .lessonNavigator{
+  position:sticky;
+  top:74px;
+  z-index:7;
   display:grid;
   grid-template-columns:auto minmax(220px,1fr) auto;
   gap:9px;
@@ -152,7 +155,9 @@ h3 { font-size: 14px; color: #c9d7ee; margin: 0 0 6px; }
   padding:10px 12px;
   border:1px solid var(--line);
   border-radius:11px;
-  background:#0e192c;
+  background:rgba(14,25,44,.98);
+  box-shadow:0 8px 22px rgba(0,0,0,.22);
+  backdrop-filter:blur(10px);
 }
 .lessonNavigator label{
   color:var(--muted);
@@ -178,4 +183,46 @@ h3 { font-size: 14px; color: #c9d7ee; margin: 0 0 6px; }
 @media(max-width:760px){
   .lessonNavigator{grid-template-columns:1fr}
   .lessonNavigator label{margin-bottom:-3px}
+}
+
+/* v5.2: háromlépcsős gyakorlás */
+.practiceGuide{
+  margin:0 0 14px;
+  padding:12px 14px;
+  border:1px solid #31496f;
+  border-radius:12px;
+  background:#101d33;
+}
+.practiceGuideHead{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  margin-bottom:5px;
+}
+.practiceGuideHead strong{font-size:15px}
+.practiceGuide p{margin:4px 0 0}
+.syntaxCheat{
+  margin-top:10px;
+  padding:11px 12px;
+  border-radius:10px;
+  background:#07101e;
+  border:1px dashed #5878aa;
+  line-height:1.65;
+}
+.syntaxCheatTitle{
+  font-size:12px;
+  font-weight:900;
+  color:#bdd6ff;
+  margin-bottom:5px;
+  text-transform:uppercase;
+  letter-spacing:.03em;
+}
+.syntaxCheat code{
+  background:#15213a;
+  color:#fff;
+  padding:2px 5px;
+  border-radius:5px;
+}
+@media(max-width:760px){
+  .lessonNavigator{position:static}
 }
