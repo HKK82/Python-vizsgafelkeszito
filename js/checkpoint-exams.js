@@ -243,5 +243,142 @@ export const checkpointExams = [
         solution:'def paros(szam):\n    return szam % 2 == 0'
       }
     ]
+  },
+  {
+    id:'checkpoint-6',
+    checkpoint:true,
+    checkpointId:'checkpoint-6',
+    title:'Kisvizsga 6 – Algoritmusok',
+    description:'A 17–20. lecke önálló ellenőrzése: összegzés, megszámlálás, minimum/maximum, keresés.',
+    durationMinutes:18,
+    passPct:80,
+    minTaskPct:60,
+    tasks:[
+      {
+        title:'1. feladat – Összegzés', points:10, lessonIds:[17],
+        text:'Ciklussal add össze a [8, 3, 11, -2] lista elemeit, és csak az összeget írd ki.', starter:'ertekek = [8, 3, 11, -2]\n',
+        checks:[
+          {label:'for ciklus',points:3,type:'node',name:'For',min:1},
+          {label:'összeadás',points:2,type:'op',name:'Add',min:1}
+        ],
+        tests:[{inputs:[],expectedLines:['20'],points:5}],
+        solution:'ertekek = [8, 3, 11, -2]\nosszeg = 0\nfor ertek in ertekek:\n    osszeg += ertek\nprint(osszeg)'
+      },
+      {
+        title:'2. feladat – Megszámlálás', points:10, lessonIds:[18],
+        text:'Számold meg ciklussal, hány legalább 90-es érték van a [91, 22, 90, 89, 100] listában.', starter:'ertekek = [91, 22, 90, 89, 100]\n',
+        checks:[
+          {label:'for ciklus',points:2,type:'node',name:'For',min:1},
+          {label:'if feltétel',points:2,type:'node',name:'If',min:1}
+        ],
+        tests:[{inputs:[],expectedLines:['3'],points:6}],
+        solution:'ertekek = [91, 22, 90, 89, 100]\ndb = 0\nfor ertek in ertekek:\n    if ertek >= 90:\n        db += 1\nprint(db)'
+      },
+      {
+        title:'3. feladat – Szélsőérték és keresés', points:10, lessonIds:[19,20],
+        text:'A [7, 2, 15, 4] listából ciklussal írd ki az első sorba a maximumot, a második sorba pedig azt, hogy van-e 10-nél nagyobb elem (True/False).', starter:'ertekek = [7, 2, 15, 4]\n',
+        checks:[
+          {label:'for ciklus',points:2,type:'node',name:'For',min:1},
+          {label:'if feltétel',points:2,type:'node',name:'If',min:1}
+        ],
+        tests:[{inputs:[],expectedLines:['15','True'],points:6}],
+        solution:'ertekek = [7, 2, 15, 4]\nmaximum = ertekek[0]\ntalalt = False\nfor ertek in ertekek:\n    if ertek > maximum:\n        maximum = ertek\n    if ertek > 10:\n        talalt = True\nprint(maximum)\nprint(talalt)'
+      }
+    ]
+  },
+  {
+    id:'checkpoint-7',
+    checkpoint:true,
+    checkpointId:'checkpoint-7',
+    title:'Kisvizsga 7 – Modulok és fájlkezelés',
+    description:'A 21–24. lecke önálló ellenőrzése: math, fájlolvasás, split(), fájlba írás.',
+    durationMinutes:22,
+    passPct:80,
+    minTaskPct:60,
+    tasks:[
+      {
+        title:'1. feladat – math modul', points:10, lessonIds:[21],
+        text:'Importáld a math modult. Kérj be egy tizedes számot, és írd ki a négyzetgyökét két tizedesre.', starter:'',
+        checks:[
+          {label:'import',points:2,type:'node',name:'Import',min:1},
+          {label:'sqrt()',points:2,type:'call',name:'sqrt',min:1}
+        ],
+        tests:[
+          {inputs:['25'],expectedLines:['5.00'],points:3},
+          {inputs:['2'],expectedLines:['1.41'],points:3}
+        ],
+        solution:'import math\nszam = float(input("Szám: "))\nprint(f"{math.sqrt(szam):.2f}")'
+      },
+      {
+        title:'2. feladat – Fájl feldolgozása', points:10, lessonIds:[22,23],
+        text:'A szerverek.txt sorai név;terhelés formájúak. Írd ki csak a legalább 90-es terhelésű szerverek nevét.', starter:'',
+        checks:[
+          {label:'open()',points:2,type:'call',name:'open',min:1},
+          {label:'split()',points:2,type:'call',name:'split',min:1}
+        ],
+        fileTests:[
+          {files:{'szerverek.txt':'SRV01;95\nWEB02;72\nDB03;91\n'},readFiles:[],expectedFiles:{},expectedLines:['SRV01','DB03'],points:6}
+        ],
+        solution:'with open("szerverek.txt", "r", encoding="utf-8") as fajl:\n    for sor in fajl:\n        adatok = sor.strip().split(";")\n        if int(adatok[1]) >= 90:\n            print(adatok[0])'
+      },
+      {
+        title:'3. feladat – Fájlba írás', points:10, lessonIds:[24],
+        text:'A [12, 95, 70, 91] listából írd a legalább 90-es értékeket soronként a kritikus.txt fájlba.', starter:'ertekek = [12, 95, 70, 91]\n',
+        checks:[
+          {label:'open()',points:2,type:'call',name:'open',min:1},
+          {label:'write()',points:2,type:'call',name:'write',min:1}
+        ],
+        fileTests:[
+          {files:{},readFiles:['kritikus.txt'],expectedFiles:{'kritikus.txt':'95\n91\n'},expectedLines:[],points:6}
+        ],
+        solution:'ertekek = [12, 95, 70, 91]\nwith open("kritikus.txt", "w", encoding="utf-8") as fajl:\n    for ertek in ertekek:\n        if ertek >= 90:\n            fajl.write(str(ertek) + "\\n")'
+      }
+    ]
+  },
+  {
+    id:'checkpoint-8',
+    checkpoint:true,
+    checkpointId:'checkpoint-8',
+    title:'Kisvizsga 8 – Osztályok és objektumok',
+    description:'A 25–28. lecke önálló ellenőrzése: class, __init__, objektumlista és fájl→objektum→kimeneti fájl.',
+    durationMinutes:25,
+    passPct:80,
+    minTaskPct:60,
+    tasks:[
+      {
+        title:'1. feladat – Saját osztály', points:10, lessonIds:[25,26],
+        text:'Készíts Gep osztályt nev és ram attribútummal. Hozz létre Gep("PC01", 16) példányt, majd írd ki a nevét és RAM-ját két sorban.', starter:'',
+        checks:[
+          {label:'Gep osztály',points:2,type:'node',name:'ClassDef',min:1},
+          {label:'__init__()',points:2,type:'function',name:'__init__',minArgs:3}
+        ],
+        tests:[{inputs:[],expectedLines:['PC01','16'],points:6}],
+        solution:'class Gep:\n    def __init__(self, nev, ram):\n        self.nev = nev\n        self.ram = ram\n\ngep = Gep("PC01", 16)\nprint(gep.nev)\nprint(gep.ram)'
+      },
+      {
+        title:'2. feladat – Objektumlista', points:10, lessonIds:[27],
+        text:'Készíts három Gep objektumot 8, 16 és 32 GB RAM-mal. Listából ciklussal írd ki a legalább 16 GB-os gépek nevét.', starter:'',
+        checks:[
+          {label:'osztály',points:2,type:'node',name:'ClassDef',min:1},
+          {label:'for ciklus',points:2,type:'node',name:'For',min:1}
+        ],
+        tests:[{inputs:[],expectedLines:['PC02','PC03'],points:6}],
+        solution:'class Gep:\n    def __init__(self, nev, ram):\n        self.nev = nev\n        self.ram = ram\n\ngepek = [Gep("PC01", 8), Gep("PC02", 16), Gep("PC03", 32)]\nfor gep in gepek:\n    if gep.ram >= 16:\n        print(gep.nev)'
+      },
+      {
+        title:'3. feladat – Fájl és objektumok', points:10, lessonIds:[28],
+        text:'A szerverek.txt név;terhelés sorait töltsd Szerver objektumok listájába. A legalább 90%-os szerverek nevét írd a kritikus.txt fájlba, majd írd ki a darabszámukat.', starter:'',
+        checks:[
+          {label:'Szerver osztály',points:1.5,type:'node',name:'ClassDef',min:1},
+          {label:'__init__()',points:1.5,type:'function',name:'__init__',minArgs:3},
+          {label:'open()',points:1.5,type:'call',name:'open',min:2},
+          {label:'write()',points:1.5,type:'call',name:'write',min:1}
+        ],
+        fileTests:[
+          {files:{'szerverek.txt':'SRV01;95\nWEB02;72\nDB03;91\n'},readFiles:['kritikus.txt'],expectedFiles:{'kritikus.txt':'SRV01\nDB03\n'},expectedLines:['2'],points:4}
+        ],
+        solution:'class Szerver:\n    def __init__(self, nev, terheles):\n        self.nev = nev\n        self.terheles = terheles\n\nszerverek = []\nwith open("szerverek.txt", "r", encoding="utf-8") as fajl:\n    for sor in fajl:\n        adatok = sor.strip().split(";")\n        szerverek.append(Szerver(adatok[0], int(adatok[1])))\ndb = 0\nwith open("kritikus.txt", "w", encoding="utf-8") as ki:\n    for szerver in szerverek:\n        if szerver.terheles >= 90:\n            ki.write(szerver.nev + "\\n")\n            db += 1\nprint(db)'
+      }
+    ]
   }
 ];
