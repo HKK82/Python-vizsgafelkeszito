@@ -14,8 +14,19 @@ from collections import Counter, deque
 _JSON_DUMPS = json.dumps
 _JSON_LOADS = json.loads
 _REAL_IMPORT = builtins.__import__
+_REAL_OPEN = builtins.open
 
-BLOCKED_IMPORT_ROOTS = {"js", "pyodide", "micropip", "__main__", "builtins"}
+# A böngészős gyakorlókörnyezet nem általános célú Python-shell.
+# Csak a tananyaghoz szükséges, átnézett modulokat engedjük.
+ALLOWED_IMPORT_ROOTS = {"math"}
+BLOCKED_NAMES = {
+    "__builtins__", "__import__", "__loader__", "__spec__", "__package__",
+    "eval", "exec", "compile", "breakpoint", "globals", "locals", "vars",
+    "getattr", "setattr", "delattr", "help", "exit", "quit"
+}
+MAX_CODE_CHARS = 20000
+MAX_AST_NODES = 3000
+MAX_LITERAL_CHARS = 12000
 
 
 def _jsonable(value):
@@ -28,7 +39,24 @@ def _jsonable(value):
     return repr(value)
 
 
+def _security_error(message, line=None, text=""):
+    return {
+        "ok": False,
+        "error": {
+            "type": "SecurityError",
+            "message": message,
+            "line": line,
+            "text": text,
+        },
+    }
+
+
 def analyze_code(code):
+    if len(code) > MAX_CODE_CHARS:
+        return _security_error(
+            f"A program túl hosszú ehhez a gyakorlókörnyezethez (maximum {MAX_CODE_CHARS} karakter)."
+        )
+
     try:
         tree = ast.parse(code, filename="<student>", mode="exec")
     except SyntaxError as exc:
@@ -42,12 +70,88 @@ def analyze_code(code):
             },
         }
 
+    walked = list(ast.walk(tree))
+    if len(walked) > MAX_AST_NODES:
+        return _security_error(
+            f"A program túl összetett ehhez a gyakorlókörnyezethez (maximum {MAX_AST_NODES} szintaktikai elem)."
+        )
+
+    imported_aliases = set()
+    for node in walked:
+        line = getattr(node, "lineno", None)
+
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                root = alias.name.split(".", 1)[0]
+                if root not in ALLOWED_IMPORT_ROOTS:
+                    return _security_error(
+                        f"A(z) {root} modul ebben a gyakorlókörnyezetben nem használható.",
+                        line,
+                    )
+                imported_aliases.add(alias.asname or root)
+
+        elif isinstance(node, ast.ImportFrom):
+            root = (node.module or "").split(".", 1)[0]
+            if node.level or root not in ALLOWED_IMPORT_ROOTS:
+                return _security_error(
+                    f"A(z) {root or 'relatív'} modulimport ebben a gyakorlókörnyezetben nem használható.",
+                    line,
+                )
+            for alias in node.names:
+                if alias.name.startswith("_"):
+                    return _security_error("Belső modulnév importálása nem engedélyezett.", line)
+                imported_aliases.add(alias.asname or alias.name)
+
+        if isinstance(node, ast.Name) and node.id in BLOCKED_NAMES:
+            return _security_error(
+                f"A(z) {node.id} név biztonsági okból nem használható ebben a gyakorlókörnyezetben.",
+                line,
+            )
+
+        if isinstance(node, ast.Attribute) and node.attr.startswith("_"):
+            return _security_error(
+                "Belső/dunder attribútumok közvetlen elérése nem engedélyezett.",
+                line,
+            )
+
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            if node.name.startswith("__") and node.name != "__init__":
+                return _security_error(
+                    f"A(z) {node.name} speciális metódus itt nem definiálható.",
+                    line,
+                )
+
+        if isinstance(node, ast.Constant) and isinstance(node.value, (str, bytes)):
+            if len(node.value) > MAX_LITERAL_CHARS:
+                return _security_error(
+                    f"Túl nagy literál ({len(node.value)} karakter/bájt).",
+                    line,
+                )
+
+    # Importált modulok belső állapotát se lehessen átírni (pl. math.sqrt = ...).
+    for node in walked:
+        targets = []
+        if isinstance(node, (ast.Assign, ast.AnnAssign)):
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+        elif isinstance(node, ast.AugAssign):
+            targets = [node.target]
+        elif isinstance(node, ast.Delete):
+            targets = node.targets
+
+        for target in targets:
+            if isinstance(target, ast.Attribute) and isinstance(target.value, ast.Name):
+                if target.value.id in imported_aliases:
+                    return _security_error(
+                        "Importált modul attribútumainak módosítása nem engedélyezett.",
+                        getattr(target, "lineno", None),
+                    )
+
     nodes = Counter()
     calls = Counter()
     ops = Counter()
     functions = {}
 
-    for node in ast.walk(tree):
+    for node in walked:
         nodes[node.__class__.__name__] += 1
         if isinstance(node, ast.Call):
             if isinstance(node.func, ast.Name):
@@ -76,20 +180,43 @@ def analyze_code(code):
         },
     }
 
+def _safe_path(path, sandbox_dir):
+    if sandbox_dir is None:
+        raise PermissionError("Fájlművelet csak elkülönített gyakorlómappában engedélyezett.")
+    if not isinstance(path, (str, bytes, os.PathLike)):
+        raise PermissionError("Csak fájlnévvel megadott fájlművelet engedélyezett.")
+    raw = os.fsdecode(os.fspath(path))
+    if os.path.isabs(raw):
+        raise PermissionError("Abszolút fájlútvonal nem használható.")
+    root = os.path.realpath(sandbox_dir)
+    candidate = os.path.realpath(os.path.join(root, raw))
+    if os.path.commonpath([root, candidate]) != root:
+        raise PermissionError("A gyakorlómappán kívüli fájl nem érhető el.")
+    return candidate
 
-def _safe_builtins(fake_input):
+
+def _safe_builtins(fake_input, sandbox_dir=None):
     data = dict(vars(builtins))
 
     def safe_import(name, globals=None, locals=None, fromlist=(), level=0):
         root = name.split(".", 1)[0]
-        if root in BLOCKED_IMPORT_ROOTS:
+        if level or root not in ALLOWED_IMPORT_ROOTS:
             raise ImportError(f"A(z) {root} modul ebben a gyakorlókörnyezetben nem használható.")
         return _REAL_IMPORT(name, globals, locals, fromlist, level)
 
+    def safe_open(file, mode="r", *args, **kwargs):
+        if kwargs.get("opener") is not None:
+            raise PermissionError("Egyedi opener nem használható.")
+        safe_file = _safe_path(file, sandbox_dir)
+        return _REAL_OPEN(safe_file, mode, *args, **kwargs)
+
+    for name in BLOCKED_NAMES:
+        data.pop(name, None)
+
     data["input"] = fake_input
+    data["open"] = safe_open
     data["__import__"] = safe_import
     return data
-
 
 def _format_error(exc):
     line = None
@@ -121,7 +248,7 @@ def _normalize_lines(text):
     return lines
 
 
-def _build_namespace(inputs, module_name="__main__"):
+def _build_namespace(inputs, module_name="__main__", sandbox_dir=None):
     queue = deque(str(v) for v in inputs)
     consumed = []
 
@@ -134,26 +261,13 @@ def _build_namespace(inputs, module_name="__main__"):
 
     ns = {
         "__name__": module_name,
-        "__builtins__": _safe_builtins(fake_input),
+        "__builtins__": _safe_builtins(fake_input, sandbox_dir),
     }
     return ns, consumed
 
 
-def execute_code(code, inputs=None):
-    inputs = inputs or []
-    analysis = analyze_code(code)
-    if not analysis["ok"]:
-        return {
-            "ok": False,
-            "stdout": "",
-            "stdoutLines": [],
-            "stderr": "",
-            "inputsUsed": [],
-            "error": analysis["error"],
-            "ast": None,
-        }
-
-    ns, consumed = _build_namespace(inputs, "__main__")
+def _execute_code_in_dir(code, inputs, analysis, sandbox_dir):
+    ns, consumed = _build_namespace(inputs, "__main__", sandbox_dir)
     out = io.StringIO()
     err = io.StringIO()
     try:
@@ -183,6 +297,26 @@ def execute_code(code, inputs=None):
         }
 
 
+def execute_code(code, inputs=None, sandbox_dir=None):
+    inputs = inputs or []
+    analysis = analyze_code(code)
+    if not analysis["ok"]:
+        return {
+            "ok": False,
+            "stdout": "",
+            "stdoutLines": [],
+            "stderr": "",
+            "inputsUsed": [],
+            "error": analysis["error"],
+            "ast": None,
+        }
+
+    if sandbox_dir is not None:
+        return _execute_code_in_dir(code, inputs, analysis, sandbox_dir)
+
+    with tempfile.TemporaryDirectory() as tmp:
+        return _execute_code_in_dir(code, inputs, analysis, tmp)
+
 def execute_code_with_files(code, inputs=None, files=None, read_files=None):
     inputs = inputs or []
     files = files or {}
@@ -193,14 +327,14 @@ def execute_code_with_files(code, inputs=None, files=None, read_files=None):
             os.chdir(tmp)
             for name, content in files.items():
                 safe_name = os.path.basename(str(name))
-                with open(safe_name, "w", encoding="utf-8", newline="") as fh:
+                with _REAL_OPEN(os.path.join(tmp, safe_name), "w", encoding="utf-8", newline="") as fh:
                     fh.write(str(content))
-            result = execute_code(code, inputs)
+            result = execute_code(code, inputs, sandbox_dir=tmp)
             outputs = {}
             for name in read_files:
                 safe_name = os.path.basename(str(name))
                 try:
-                    with open(safe_name, "r", encoding="utf-8") as fh:
+                    with _REAL_OPEN(os.path.join(tmp, safe_name), "r", encoding="utf-8") as fh:
                         outputs[str(name)] = fh.read().replace("\r\n", "\n")
                 except FileNotFoundError:
                     outputs[str(name)] = None
@@ -217,36 +351,37 @@ def test_function(code, function_name, args):
 
     # Nem __main__ néven futtatjuk a definíciós fájlt, ezért a szabványos
     # if __name__ == "__main__": blokk nem indul el a függvényteszt előtt.
-    ns, _ = _build_namespace([], "__student_test__")
-    out = io.StringIO()
-    err = io.StringIO()
-    try:
-        compiled = compile(code, "<student>", "exec")
-        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
-            exec(compiled, ns, ns)
-        fn = ns.get(function_name)
-        if not callable(fn):
+    with tempfile.TemporaryDirectory() as tmp:
+        ns, _ = _build_namespace([], "__student_test__", tmp)
+        out = io.StringIO()
+        err = io.StringIO()
+        try:
+            compiled = compile(code, "<student>", "exec")
+            with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+                exec(compiled, ns, ns)
+            fn = ns.get(function_name)
+            if not callable(fn):
+                return {
+                    "ok": False,
+                    "error": {"type": "MissingFunction", "message": f"Nem található a(z) {function_name}() függvény.", "line": None, "text": ""},
+                    "actual": None,
+                    "ast": analysis["summary"],
+                }
+            with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+                result = fn(*args)
+            return {
+                "ok": True,
+                "error": None,
+                "actual": _jsonable(result),
+                "ast": analysis["summary"],
+            }
+        except BaseException as exc:
             return {
                 "ok": False,
-                "error": {"type": "MissingFunction", "message": f"Nem található a(z) {function_name}() függvény.", "line": None, "text": ""},
+                "error": _format_error(exc),
                 "actual": None,
                 "ast": analysis["summary"],
             }
-        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
-            result = fn(*args)
-        return {
-            "ok": True,
-            "error": None,
-            "actual": _jsonable(result),
-            "ast": analysis["summary"],
-        }
-    except BaseException as exc:
-        return {
-            "ok": False,
-            "error": _format_error(exc),
-            "actual": None,
-            "ast": analysis["summary"],
-        }
 
 
 def handle_request(payload_json):
