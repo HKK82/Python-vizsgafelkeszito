@@ -233,3 +233,19 @@ h3 { font-size: 14px; color: #c9d7ee; margin: 0 0 6px; }
 @media(max-width:760px){
   .lessonNavigator{position:static}
 }
+
+.buttonLike{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  text-decoration:none;
+  padding:10px 14px;
+  border-radius:9px;
+  background:#72a5ff;
+  color:#06111f;
+  font-weight:900;
+}
+.buttonLike:hover{filter:brightness(1.06)}
+.examCard .badge + .badge,
+.examCard .badge + .examModeTag,
+.examCard .examModeTag + .examModeTag{margin-left:6px}
