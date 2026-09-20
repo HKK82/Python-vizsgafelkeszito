@@ -57,7 +57,7 @@ function microCoachText(lessonId) {
   const tips = {
     1: '<strong>Jegyezd meg:</strong> ha konkrét szöveget írsz ki, idézőjel kell: <code>print("Szia")</code>.',
     2: '<strong>Nagyon fontos:</strong> a szöveg és a változó nem ugyanaz. <code>print("ram")</code> a „ram” szót írja ki, <code>print(ram)</code> pedig a <code>ram</code> változó értékét. A <code>ram = 16</code> azt jelenti, hogy a változó egyetlen számértéke 16 — nem 16 darab számot kell beírni.',
-    3: '<strong>Jegyezd meg:</strong> egy <code>input()</code> egy bemeneti értéket kér. Az eredménye szöveg, amit általában változóba mentesz. A <strong>Futtatás</strong> gomb most automatikusan ad próba-bemenetet, ha a feladathoz van ilyen tesztadat.',
+    3: '<strong>Jegyezd meg:</strong> egy <code>input()</code> egy bemeneti értéket kér. Az eredménye szöveg, amit általában változóba mentesz. A <strong>Futtatás</strong> gombnál te adod meg a saját próba-bemenetedet.',
     4: '<strong>Jegyezd meg:</strong> <code>input()</code> → szöveg. Számoláshoz alakítsd át: <code>int(...)</code> vagy <code>float(...)</code>.',
     5: '<strong>Előbb gondold ki a képletet:</strong> melyik értékből mit kell kivonni, összeadni, szorozni vagy osztani. Csak utána írd Pythonban.',
     6: '<strong>Különbség:</strong> <code>%</code> a maradékot adja, <code>//</code> pedig az egész hányadost.',
@@ -73,6 +73,80 @@ function microCoachText(lessonId) {
     16: '<strong>Függvény:</strong> a paraméter bemenet a függvénynek, a <code>return</code> pedig visszaadja az eredményt. A <code>print()</code> és a <code>return</code> nem ugyanaz.'
   };
   return tips[lessonId] || '<strong>Tanulási szabály:</strong> először értsd meg, milyen adatod van, mit kell vele csinálni, és mi legyen az eredmény.';
+}
+
+function syntaxCheatText(lessonId) {
+  const cheats = {
+    1: '<code>print("szöveg")</code><br><code>print(változó)</code>',
+    2: '<code>nev = "Anna"</code><br><code>ram = 16</code><br><code>print(ram)</code>',
+    3: '<code>nev = input("Neved: ")</code><br><code>print(nev)</code>',
+    4: '<code>kor = int(input("Kor: "))</code><br><code>ar = float(input("Ár: "))</code>',
+    5: '<code>a + b</code> &nbsp; <code>a - b</code> &nbsp; <code>a * b</code> &nbsp; <code>a / b</code>',
+    6: '<code>a % b</code> → maradék<br><code>a // b</code> → egész hányados',
+    7: '<code>print(f"Név: {nev}")</code>',
+    8: '<code>if feltétel:</code><br>&nbsp;&nbsp;&nbsp;&nbsp;<code>utasítás</code>',
+    9: '<code>if feltétel1:</code><br>&nbsp;&nbsp;&nbsp;&nbsp;<code>...</code><br><code>elif feltétel2:</code><br>&nbsp;&nbsp;&nbsp;&nbsp;<code>...</code><br><code>else:</code><br>&nbsp;&nbsp;&nbsp;&nbsp;<code>...</code>',
+    10: '<code>if a and b:</code><br><code>if a or b:</code>',
+    11: '<code>lista = [10, 20, 30]</code><br><code>lista[0]</code>',
+    12: '<code>len(lista)</code><br><code>lista.append(uj_elem)</code>',
+    13: '<code>for elem in lista:</code><br>&nbsp;&nbsp;&nbsp;&nbsp;<code>print(elem)</code>',
+    14: '<code>for i in range(1, 6):</code><br>&nbsp;&nbsp;&nbsp;&nbsp;<code>print(i)</code>',
+    15: '<code>while feltétel:</code><br>&nbsp;&nbsp;&nbsp;&nbsp;<code>...</code><br>&nbsp;&nbsp;&nbsp;&nbsp;<code>változás</code>',
+    16: '<code>def nev(parameter):</code><br>&nbsp;&nbsp;&nbsp;&nbsp;<code>return eredmeny</code>'
+  };
+  return cheats[lessonId] || '';
+}
+
+function practiceStage(taskIndex) {
+  if (taskIndex === 0) {
+    return {
+      number: '1/3',
+      title: 'Tanulás – nézd meg a mintát',
+      text: 'Most még látod a magyarázatot és a szintaxist. A cél, hogy először megértsd, hogyan épül fel ez a Python-rész.',
+      showExplanation: true,
+      showMicroTip: true,
+      showCheat: true,
+      independent: false
+    };
+  }
+  if (taskIndex === 1) {
+    return {
+      number: '2/3',
+      title: 'Gyakorlás puskával',
+      text: 'Most már te oldod meg a feladatot, de a szükséges szintaxis még itt van segítségnek.',
+      showExplanation: false,
+      showMicroTip: true,
+      showCheat: true,
+      independent: false
+    };
+  }
+  return {
+    number: '3/3',
+    title: 'Önálló próba – puska nélkül',
+    text: 'Most nincs szintaxis-puska és nincs mintamegoldás. Addig próbálkozol, amíg az automatikus ellenőrzés sikeres nem lesz. Ha hibázol, az AI elmagyarázhatja, miért nem jó, de nem adja oda a kész megoldást.',
+    showExplanation: false,
+    showMicroTip: false,
+    showCheat: false,
+    independent: true
+  };
+}
+
+function renderPracticeStage(lesson, taskIndex) {
+  const stage = practiceStage(taskIndex);
+  $('practiceStageBadge').textContent = stage.number;
+  $('practiceStageTitle').textContent = stage.title;
+  $('practiceStageText').textContent = stage.text;
+  $('syntaxCheat').innerHTML = stage.showCheat
+    ? `<div class="syntaxCheatTitle">📌 Szintaxis-puska</div>${syntaxCheatText(lesson.id)}`
+    : '';
+  $('syntaxCheat').classList.toggle('hidden', !stage.showCheat);
+  $('lessonExplain').classList.toggle('hidden', !stage.showExplanation);
+  $('microTip').classList.toggle('hidden', !stage.showMicroTip);
+  $('aiExplainBtn').classList.toggle('hidden', stage.independent);
+  $('hintBtn').classList.toggle('hidden', stage.independent);
+  $('aiHintBtn').classList.toggle('hidden', stage.independent);
+  $('solutionBtn').classList.toggle('hidden', stage.independent);
+  if (stage.independent) $('solutionPanel').classList.add('hidden');
 }
 
 function successCoachText(lessonId) {
@@ -244,6 +318,7 @@ function renderTask() {
   $('lessonObjective').textContent = lesson.objective;
   $('lessonExplain').innerHTML = lesson.explain;
   $('microTip').innerHTML = `🧠 ${microCoachText(lesson.id)}`;
+  renderPracticeStage(lesson, taskIndex);
   $('taskCounter').textContent = `Feladat ${taskIndex + 1}/${lesson.tasks.length}`;
   $('taskText').innerHTML = task.text;
   $('codeEditor').value = store.getDraft(key, task.starter || '');
@@ -256,8 +331,11 @@ function renderTask() {
 
   const attempts = store.getAttempts(key);
   $('attemptText').textContent = attempts ? `${attempts} sikertelen ellenőrzés` : 'Még nincs sikertelen ellenőrzés';
-  $('solutionBtn').disabled = attempts < 3;
-  $('solutionBtn').title = attempts < 3 ? '3 sikertelen próbálkozás után válik elérhetővé.' : 'Mintamegoldás megtekintése';
+  const independentStage = practiceStage(taskIndex).independent;
+  $('solutionBtn').disabled = independentStage || attempts < 3;
+  $('solutionBtn').title = independentStage
+    ? 'Az önálló próbán nincs mintamegoldás: sikeres ellenőrzésig gyakorolsz.'
+    : (attempts < 3 ? '3 sikertelen próbálkozás után válik elérhetővé.' : 'Mintamegoldás megtekintése');
   $('solutionPanel').classList.add('hidden');
   $('solutionCode').textContent = task.solution || '';
 
@@ -268,8 +346,10 @@ function renderTask() {
   $('prevBtn').disabled = currentIndex === 0;
 
   $('messages').innerHTML = '';
-  addTeacherMessage(`Most a(z) „${lesson.title}” témán dolgozunk. Először olvasd el, mi az új eszköz és mire használjuk, majd oldd meg a feladatot. A továbbhaladást a programtesztek döntik el.`);
-  addTeacherMessage(`🧠 Ezt jegyezd meg: ${htmlToText(microCoachText(lesson.id))}`);
+  const stage = practiceStage(taskIndex);
+  addTeacherMessage(`Most a(z) „${lesson.title}” témán dolgozunk. ${stage.title}. A továbbhaladást a programtesztek döntik el.`);
+  if (!stage.independent) addTeacherMessage(`🧠 Ezt jegyezd meg: ${htmlToText(microCoachText(lesson.id))}`);
+  else addTeacherMessage('🎯 Most önálló próba következik: nincs puska. Ha hibázol, megmondom, miért nem jó és merre indulj tovább, de a kész megoldást nem adom oda.');
   store.setLastViewed(currentIndex);
   tracker.record('activity');
   tracker.flush().catch(() => {});
@@ -431,7 +511,7 @@ function autoExplainFailure(source, diagnostic) {
   if (now - lastAutoAiAt < 5000) return;
   lastAutoAiAt = now;
   askAi(
-    `A(z) ${source} nem sikerült. Magyarázd el nagyon egyszerűen és konkrétan, miért nem jó a jelenlegi kód. Először nevezd meg a hibát, utána mondd el a legkisebb javítási irányt. Ne add meg a teljes kész megoldást, ha még nem engedélyezett.`,
+    `A(z) ${source} nem sikerült. Magyarázd el nagyon egyszerűen és konkrétan, miért nem jó a jelenlegi kód. Először nevezd meg a hibát, utána mondd el a legkisebb javítási irányt. Ha ez a 3/3 önálló próba, semmilyen körülmények között ne add meg a teljes kész megoldást vagy a teljes helyes kódot.`,
     'aiHints',
     { automatic: true }
   );
@@ -547,7 +627,8 @@ function localHint() {
 }
 
 function showSolution() {
-  const { task, key } = currentItem();
+  const { task, key, taskIndex } = currentItem();
+  if (practiceStage(taskIndex).independent) return;
   const attempts = store.getAttempts(key);
   if (attempts < 3) return;
   store.markSolutionViewed(key);
@@ -608,7 +689,7 @@ async function askAi(question, activityType = 'aiQuestions', { automatic = false
       objective: lesson.objective,
       explanationText: htmlToText(lesson.explain),
       attempts: store.getAttempts(taskKey),
-      solutionAllowed: store.getAttempts(taskKey) >= 3,
+      solutionAllowed: store.getAttempts(taskKey) >= 3 && !practiceStage(currentItem().taskIndex).independent,
       taskText: htmlToText(task.text),
       expectedExamples: (task.tests || []).slice(0, 2).map(t => ({ inputs: t.inputs || [], expectedLines: t.expectedLines || [] })),
       helpLevel: Math.min(5, Math.max(1, store.getAttempts(taskKey) + 1)),
