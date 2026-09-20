@@ -20,6 +20,9 @@ let meta = null;
 let unsubStudents = null;
 let unsubMeta = null;
 
+const TEACHER_TEST_AUTH_KEY = 'python_teacher_test_authorized_until_v1';
+const TEACHER_TEST_TTL_MS = 2 * 60 * 60 * 1000;
+
 function esc(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;' }[c]));
 }
@@ -296,7 +299,16 @@ $('toggleClassBtn').onclick = async () => {
 };
 $('csvBtn').onclick = exportCsv;
 $('examCsvBtn').onclick = exportExamCsv;
-$('logoutBtn').onclick = async () => { await signOutFirebase(); location.reload(); };
+$('lessonTestBtn').onclick = () => {
+  if (!user) return;
+  localStorage.setItem(TEACHER_TEST_AUTH_KEY, String(Date.now() + TEACHER_TEST_TTL_MS));
+  window.open('./?test=1', '_blank', 'noopener');
+};
+$('logoutBtn').onclick = async () => {
+  localStorage.removeItem(TEACHER_TEST_AUTH_KEY);
+  await signOutFirebase();
+  location.reload();
+};
 
 if (!cloudConfigured()) {
   $('firebaseState').textContent = 'Firebase nincs beállítva';
