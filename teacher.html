@@ -28,11 +28,24 @@
       <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
       <div class="teacherControls"><div><label>Meglévő órakód</label><input id="classCode" placeholder="PY-ABCDE"></div><button id="openClassBtn" class="secondary">Megnyitás</button><button id="copyCodeBtn" class="ghost">Kód másolása</button></div>
     </section>
-    <section id="sessionCard" class="card simpleCard hidden"><div class="teacherHero"><div><div class="tiny">Aktuális órakód</div><div id="classCodeBig" class="classCodeBig">–</div><div id="sessionTitle" class="muted"></div></div><div class="buttonRow"><button id="toggleClassBtn" class="danger">Óra lezárása</button><button id="csvBtn" class="secondary">⬇ CSV export</button></div></div></section>
+    <section id="sessionCard" class="card simpleCard hidden"><div class="teacherHero"><div><div class="tiny">Aktuális órakód</div><div id="classCodeBig" class="classCodeBig">–</div><div id="sessionTitle" class="muted"></div></div><div class="buttonRow"><button id="toggleClassBtn" class="danger">Óra lezárása</button><button id="csvBtn" class="secondary">⬇ Aktivitás CSV</button><button id="examCsvBtn" class="secondary">⬇ Vizsganapló CSV</button></div></div></section>
     <section class="statTiles" id="stats"></section>
     <section class="card simpleCard" style="margin-top:14px">
       <div class="teacherHero"><div><h2>Tanulók élőben</h2><p class="tiny">🟢 aktív: 90 mp-en belül dolgozott • 🟡 inaktív • 🟠 az oldal háttérben van • ⚪ offline. Látható még az aktuális feladat, a sikertelen próbálkozások száma, a haladás, a futtatások, ellenőrzések és tippek száma. A telefonhasználatot a rendszer nem figyeli.</p></div><span id="lastUpdate" class="tiny"></span></div>
       <div class="dashboardTableWrap"><table class="dashboardTable"><thead><tr><th>Azonosító</th><th>Állapot</th><th>Hol tart</th><th>Próbák</th><th>Haladás</th><th>Aktív</th><th>Inaktív</th><th>Háttér</th><th>Futtatás</th><th>Ellenőrzés</th><th>Sikeres</th><th>Tipp / AI</th><th>Utolsó aktivitás</th></tr></thead><tbody id="studentRows"></tbody></table></div>
+    </section>
+    <section class="card simpleCard" style="margin-top:14px">
+      <div class="teacherHero">
+        <div>
+          <h2>Vizsgapróbálkozások</h2>
+          <p class="tiny">A napló csak vizsga-metaadatokat tartalmaz: vizsga neve/típusa, pontszám, százalék, feladatonkénti részpontok, időtartam és beadási idő. A tanuló Python-kódját és Gemini API-kulcsát nem mentjük ide.</p>
+        </div>
+        <span id="examAttemptCount" class="tiny">0 próbálkozás</span>
+      </div>
+      <div class="dashboardTableWrap"><table class="dashboardTable examLogTable">
+        <thead><tr><th>Azonosító</th><th>Típus</th><th>Vizsga</th><th>Próba</th><th>Eredmény</th><th>Állapot</th><th>Idő</th><th>Beadás</th></tr></thead>
+        <tbody id="examAttemptRows"><tr><td colspan="8" class="muted">Ehhez az órához még nincs naplózott vizsgapróbálkozás.</td></tr></tbody>
+      </table></div>
     </section>
   </section>
 </main>
