@@ -547,7 +547,23 @@ export class ProgressStore {
   }
 
   listProfiles() {
-    return Object.values(this.state.profiles).map(p => ({ displayName: p.displayName, updatedAt: p.updatedAt }));
+    return Object.values(this.state.profiles)
+      .filter(p => !p.isTestProfile)
+      .map(p => ({ displayName: p.displayName, updatedAt: p.updatedAt }));
+  }
+
+  resetTask(taskKey) {
+    const p = this.getCurrentProfile();
+    if (!p) return;
+    const key = String(taskKey);
+    delete p.completed[key];
+    delete p.attempts[key];
+    delete p.drafts[key];
+    delete p.viewedSolutions[key];
+    if (p.masteryStreaks) delete p.masteryStreaks[key];
+    this.repairFrontier(this.taskOrder?.length || 0);
+    p.updatedAt = new Date().toISOString();
+    this.persist();
   }
 
   clearCurrentSelection() {
