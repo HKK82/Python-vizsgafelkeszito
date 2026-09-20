@@ -1,4 +1,4 @@
-# Python Vizsgafelkészítő v5
+# Python Vizsgafelkészítő v6
 
 Böngészőben futó, vizsgafókuszú Python tanulórendszer informatikai rendszer- és alkalmazás-üzemeltető technikus tanulóknak.
 
@@ -17,6 +17,10 @@ Böngészőben futó, vizsgafókuszú Python tanulórendszer informatikai rendsz
 - külön modul-, fájlkezelési és objektumorientált gyakorlóvizsga;
 - feladatonkénti „Ezt jegyezd meg” mikro-tippek és siker utáni megerősítés;
 - órakódos használatnál külön „Kilépés az órából” funkció;
+- öt kötelező kisvizsga tananyagi blokkok között;
+- 80%-os kisvizsga-küszöb és feladatonkénti minimum;
+- sikertelen kisvizsga után célzott, puska nélküli újragyakorlás;
+- gyenge készségnél 2 egymást követő önálló siker szükséges az újrapróbáláshoz;
 - részvizsga-piszkozat és lejárati idő mentése, így egy frissítés nem nullázza a munkát;
 - követelménymátrix és haladás oldal;
 - opcionális, órakódos órai aktivitáskövetés.
