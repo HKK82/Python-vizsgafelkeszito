@@ -18,7 +18,7 @@ _REAL_OPEN = builtins.open
 
 # A böngészős gyakorlókörnyezet nem általános célú Python-shell.
 # Csak a tananyaghoz szükséges, átnézett modulokat engedjük.
-ALLOWED_IMPORT_ROOTS = {"math"}
+ALLOWED_IMPORT_ROOTS = {"math", "html"}
 BLOCKED_NAMES = {
     "__builtins__", "__import__", "__loader__", "__spec__", "__package__",
     "eval", "exec", "compile", "breakpoint", "globals", "locals", "vars",
