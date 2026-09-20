@@ -31,7 +31,7 @@ function render(){
       <div class="explain">${lesson.explain}</div>
       <h3>Saját jegyzetem</h3><textarea data-note="${lesson.id}" placeholder="Írd le a saját szavaiddal, mire kell figyelned ennél a témánál…">${esc(store.getPersonalNote(lesson.id))}</textarea>
       <div class="buttonRow"><button class="secondary" data-save="${lesson.id}">Jegyzet mentése</button></div>
-      <div data-ai="${lesson.id}">${saved.length?`<h3>Elmentett AI-magyarázatok</h3>${saved.map(x=>`<div class="noteSaved">${esc(x.text)}<div class="tiny">${new Date(x.savedAt).toLocaleString('hu-HU')}</div></div>`).join('')}`:'<p class="tiny">Még nincs elmentett AI-magyarázat ehhez a leckéhez.</p>'}</div>`;
+      <div data-ai="${lesson.id}">${saved.length?`<h3>Automatikusan mentett AI-magyarázatok</h3>${saved.map(x=>`<div class="noteSaved">${esc(x.text)}<div class="tiny">${new Date(x.savedAt).toLocaleString('hu-HU')}</div></div>`).join('')}`:'<p class="tiny">Még nincs AI-magyarázat ehhez a leckéhez. Ha AI-val kérdezel vagy az AI hibát magyaráz, a válasz automatikusan ide kerül.</p>'}</div>`;
     wrap.appendChild(card);
   });
   wrap.querySelectorAll('[data-save]').forEach(btn=>btn.onclick=()=>{
@@ -46,7 +46,7 @@ function exportMarkdown(){
     if(!unlocked(li))return;
     parts.push(`## ${lesson.id}. ${lesson.title}`,``,lesson.objective,``,stripHtml(lesson.explain).replace(/\s+/g,' ').trim(),``);
     const own=store.getPersonalNote(lesson.id); if(own)parts.push(`### Saját jegyzet`,``,own,``);
-    const saved=store.getSavedExplanations(lesson.id); if(saved.length){parts.push(`### Elmentett AI-magyarázatok`,``);saved.forEach(x=>parts.push(x.text,``));}
+    const saved=store.getSavedExplanations(lesson.id); if(saved.length){parts.push(`### Automatikusan mentett AI-magyarázatok`,``);saved.forEach(x=>parts.push(x.text,``));}
   });
   const blob=new Blob([parts.join('\n')],{type:'text/markdown;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`python-jegyzet-${p.displayName.replace(/\W+/g,'_')}.md`;a.click();URL.revokeObjectURL(url);
 }
