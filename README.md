@@ -1,4 +1,4 @@
-# Python Vizsgafelkészítő v4
+# Python Vizsgafelkészítő v5
 
 Böngészőben futó, vizsgafókuszú Python tanulórendszer informatikai rendszer- és alkalmazás-üzemeltető technikus tanulóknak.
 
@@ -13,6 +13,10 @@ Böngészőben futó, vizsgafókuszú Python tanulórendszer informatikai rendsz
 - visszanézhető tananyag és saját jegyzet;
 - AI-magyarázat mentése a saját jegyzetbe;
 - részvizsgák automatikus részpontozással;
+- teljes 8 + 14 + 18 pontos, 40 pontos vizsgaszimuláció;
+- külön modul-, fájlkezelési és objektumorientált gyakorlóvizsga;
+- feladatonkénti „Ezt jegyezd meg” mikro-tippek és siker utáni megerősítés;
+- órakódos használatnál külön „Kilépés az órából” funkció;
 - részvizsga-piszkozat és lejárati idő mentése, így egy frissítés nem nullázza a munkát;
 - követelménymátrix és haladás oldal;
 - opcionális, órakódos órai aktivitáskövetés.
@@ -44,7 +48,7 @@ A következő modulok:
 2. szöveg- és fájlkezelés;
 3. saját modulok;
 4. osztályok és objektumok;
-5. teljes 8 + 14 + 18 pontos alapvizsga-szimuláció;
+5. saját modul és összetettebb fájlkezelési feladatok;
 6. JSON és REST API;
 7. PyCharm/DevNet hálózatprogramozási labor.
 
