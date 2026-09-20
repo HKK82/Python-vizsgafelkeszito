@@ -88,6 +88,15 @@
         <button id="lessonStartBtn" class="ghost" type="button">↶ Lecke elejére</button>
       </div>
 
+      <section id="practiceGuide" class="practiceGuide">
+        <div class="practiceGuideHead">
+          <span id="practiceStageBadge" class="badge"></span>
+          <strong id="practiceStageTitle"></strong>
+        </div>
+        <p id="practiceStageText" class="tiny"></p>
+        <div id="syntaxCheat" class="syntaxCheat"></div>
+      </section>
+
       <h1 id="lessonTitle"></h1>
       <p id="lessonObjective" class="objective"></p>
       <section id="lessonExplain" class="explain"></section>
@@ -147,7 +156,7 @@
 
     <aside class="card tutorPanel">
       <h2>🤖 AI oktató</h2>
-      <p class="tiny">Az AI magyaráz és rávezet. Nem ő dönti el a továbbjutást, és nem hívjuk automatikusan: csak akkor fogy az API-kvóta, amikor te kérsz AI-segítséget.</p>
+      <p class="tiny">Az AI magyaráz és rávezet, de nem ő dönti el a továbbjutást. AI-módban sikertelen futtatásnál vagy ellenőrzésnél automatikusan is elmagyarázhatja a hibát, ezért ilyenkor is fogyhat az API-kvóta.</p>
       <div id="messages" class="messages"></div>
       <button id="saveAiNoteBtn" class="secondary full" disabled>📝 AI-magyarázatok automatikusan mentve a jegyzetbe</button>
       <div class="chatBox">
