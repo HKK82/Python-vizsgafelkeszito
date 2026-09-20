@@ -57,8 +57,29 @@
         <tbody id="examAttemptRows"><tr><td colspan="8" class="muted">Ehhez az órához még nincs naplózott vizsgapróbálkozás.</td></tr></tbody>
       </table></div>
     </section>
+    <section id="reportCard" class="card simpleCard reportCard" style="margin-top:14px">
+      <div class="teacherHero">
+        <div>
+          <h2>📊 Pedagógiai riport</h2>
+          <p class="tiny">Az aktuális óra haladási, aktivitási és vizsgaadataiból készül. Pedagógiai megfigyelés, nem diagnózis. A riport nem használ képernyőképet, billentyűleütést, böngészési előzményt vagy tanulói Python-kódot.</p>
+        </div>
+        <span class="tiny">Nyomtatható / PDF-be menthető</span>
+      </div>
+      <div class="reportControls">
+        <label>Tanuló
+          <select id="reportStudentSelect"><option value="">Válassz tanulót…</option></select>
+        </label>
+        <label class="reportCheck"><input id="reportAnonymize" type="checkbox"> Anonimizált név</label>
+        <button id="studentReportBtn" class="primary" type="button">Egyéni riport</button>
+        <button id="groupReportBtn" class="secondary" type="button">Csoport riport</button>
+        <button id="printReportBtn" class="ghost" type="button" disabled>🖨 Nyomtatás / PDF</button>
+      </div>
+      <div id="reportPrintArea" class="reportOutput">
+        <div class="reportEmpty">Válassz tanulót az egyéni riporthoz, vagy készíts csoport riportot.</div>
+      </div>
+    </section>
   </section>
 </main>
-<script type="module" src="./js/teacher.js?v=20260920-1615"></script>
+<script type="module" src="./js/teacher.js?v=20260920-1905"></script>
 </body>
 </html>
