@@ -4,7 +4,7 @@ Böngészőben futó, vizsgafókuszú Python tanulórendszer informatikai rendsz
 
 ## Fő elemek
 
-- 28 egymásra épülő lecke, 84 automatikusan ellenőrzött feladattal;
+- 30 egymásra épülő lecke, 90 automatikusan ellenőrzött feladattal;
 - Python futtatás külön Web Workerben, 5 másodperces időkorláttal;
 - AST-alapú szerkezeti ellenőrzés és több rejtett futási teszt, külön határértékekkel;
 - saját Gemini API-kulccsal működő AI oktató;
@@ -15,10 +15,12 @@ Böngészőben futó, vizsgafókuszú Python tanulórendszer informatikai rendsz
 - részvizsgák automatikus részpontozással;
 - teljes 8 + 14 + 18 pontos, 40 pontos vizsgaszimuláció;
 - algoritmusok, fájlkezelés és objektumok tanítása külön leckékben, még a haladó vizsgák előtt;
+- Python-csomagok fogalma és importálás csomagból;
+- félkész vagy hibás program kiegészítése, határérték- és logikai hibák javítása;
 - külön modul-, fájlkezelési és objektumorientált gyakorlóvizsga;
 - feladatonkénti „Ezt jegyezd meg” mikro-tippek és siker utáni megerősítés;
 - órakódos használatnál külön „Kilépés az órából” funkció;
-- nyolc kötelező kisvizsga tananyagi blokkok között;
+- kilenc kötelező kisvizsga tananyagi blokkok között;
 - 80%-os kisvizsga-küszöb és feladatonkénti minimum;
 - sikertelen kisvizsga után célzott, puska nélküli újragyakorlás;
 - gyenge készségnél 2 egymást követő önálló siker szükséges az újrapróbáláshoz;
