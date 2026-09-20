@@ -88,7 +88,9 @@ function microCoachText(lessonId) {
     25: '<strong>Osztály:</strong> az osztály tervrajz, az objektum pedig ebből létrehozott példány.',
     26: '<strong>__init__ és self:</strong> a konstruktor az objektum létrehozásakor tölti fel a példány saját adatait.',
     27: '<strong>Objektumlista:</strong> objektumokat ugyanúgy listába tehetsz és ciklussal bejárhatsz.',
-    28: '<strong>Komplex feladat:</strong> bontsd öt részre: beolvasás → feldolgozás → objektumlista → szűrés → fájlba írás.'
+    28: '<strong>Komplex feladat:</strong> bontsd öt részre: beolvasás → feldolgozás → objektumlista → szűrés → fájlba írás.',
+    29: '<strong>Csomag:</strong> több összetartozó modult rendez közös névtérbe. Importálhatsz egész csomagot vagy közvetlenül egy nevet belőle.',
+    30: '<strong>Hibajavítás:</strong> ne írd újra automatikusan az egész programot. Előbb keresd meg, pontosan melyik sor vagy feltétel okozza az eltérést.'
   };
   return tips[lessonId] || '<strong>Tanulási szabály:</strong> először értsd meg, milyen adatod van, mit kell vele csinálni, és mi legyen az eredmény.';
 }
@@ -122,7 +124,9 @@ function syntaxCheatText(lessonId) {
     25: '<code>class Gep:</code><br>&nbsp;&nbsp;&nbsp;&nbsp;<code>tipus = "PC"</code>',
     26: '<code>def __init__(self, nev):</code><br>&nbsp;&nbsp;&nbsp;&nbsp;<code>self.nev = nev</code>',
     27: '<code>lista.append(Gep(...))</code><br><code>for gep in lista:</code>',
-    28: '<code>split()</code> + <code>osztály</code> + <code>append()</code> + <code>write()</code>'
+    28: '<code>split()</code> + <code>osztály</code> + <code>append()</code> + <code>write()</code>',
+    29: '<code>import html</code><br><code>from html import escape</code><br><code>from html import escape as vedett</code>',
+    30: '<code>olvasd el → futtasd → azonosítsd a hibát → csak a szükséges részt javítsd</code>'
   };
   return cheats[lessonId] || '';
 }
@@ -566,7 +570,7 @@ function requirementLabel(req) {
   if (req.type === 'listAdd') return 'lista bővítése';
   const map = {
     Assign: 'értékadás/változó', If: 'if feltétel', List: 'lista', Subscript: 'listaindexelés',
-    JoinedStr: 'f-string', For: 'for ciklus', While: 'while ciklus', Return: 'return', Import: 'import', ClassDef: 'class/osztály', With: 'with blokk',
+    JoinedStr: 'f-string', For: 'for ciklus', While: 'while ciklus', Return: 'return', Import: 'import', ImportFrom: 'from ... import ...', ClassDef: 'class/osztály', With: 'with blokk',
     Add: 'összeadás (+)', Sub: 'kivonás (-)', Mult: 'szorzás (*)', Div: 'osztás (/)',
     Mod: 'maradékos osztás (%)', FloorDiv: 'egész osztás (//)', And: 'and', Or: 'or'
   };
