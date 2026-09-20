@@ -291,3 +291,26 @@ h3 { font-size: 14px; color: #c9d7ee; margin: 0 0 6px; }
 }
 .examLogPass{background:#173f30;color:#bff2d6;border:1px solid #2e6b50}
 .examLogFail{background:#4a202a;color:#ffd7de;border:1px solid #713442}
+
+.examAiCallout{
+  margin-top:10px;
+  padding:12px;
+  border-radius:11px;
+  background:#3a1821;
+  border:1px solid #7d3948;
+}
+.examAiCalloutText{
+  margin-bottom:9px;
+  color:#ffd8df;
+  font-size:13px;
+  font-weight:850;
+  line-height:1.45;
+}
+.examAiBtn{
+  width:100%;
+  font-size:14px;
+  box-shadow:0 0 0 1px rgba(255,125,140,.18), 0 8px 22px rgba(0,0,0,.2);
+}
+.examAiBtn:hover{
+  filter:brightness(1.08);
+}
