@@ -146,8 +146,8 @@ export class ProgressStore {
       normalizeProfile(this.state.profiles[key]);
       this.state.profiles[key].displayName = displayName.trim() || this.state.profiles[key].displayName;
     }
-    applyCurriculumRevision(this.state.profiles[key], this.taskOrder);
     repairLegacySequentialProgress(this.state.profiles[key], this.taskOrder);
+    applyCurriculumRevision(this.state.profiles[key], this.taskOrder);
     this.state.currentStudentKey = key;
     this.persist();
     return this.state.profiles[key];
@@ -536,8 +536,8 @@ export class ProgressStore {
     }
     const profile = payload.profile;
     normalizeProfile(profile);
-    applyCurriculumRevision(profile, this.taskOrder);
     repairLegacySequentialProgress(profile, this.taskOrder);
+    applyCurriculumRevision(profile, this.taskOrder);
     profile.updatedAt = new Date().toISOString();
     const key = normalizeStudentKey(profile.displayName);
     this.state.profiles[key] = profile;
