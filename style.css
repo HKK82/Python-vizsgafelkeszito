@@ -249,3 +249,33 @@ h3 { font-size: 14px; color: #c9d7ee; margin: 0 0 6px; }
 .examCard .badge + .badge,
 .examCard .badge + .examModeTag,
 .examCard .examModeTag + .examModeTag{margin-left:6px}
+
+.examDiagnosis{
+  margin-top:10px;
+  padding:11px 13px;
+  border-radius:10px;
+  background:#261f12;
+  border:1px solid #66541d;
+  color:#ffe9a6;
+  line-height:1.5;
+}
+.examDiagnosis strong{color:#fff2bd}
+.examDiagnosis ul{margin:7px 0 0 20px;padding:0}
+.examDiagnosis li{margin:5px 0}
+.examDiagnosis code{background:#141a27;color:#fff;padding:1px 5px;border-radius:5px}
+.examAiBtn{margin-top:10px}
+.examAiAnswer{
+  margin-top:10px;
+  padding:12px 14px;
+  border-radius:10px;
+  background:#10283a;
+  border:1px solid #285979;
+  white-space:pre-wrap;
+  line-height:1.55;
+  color:#d9efff;
+}
+.examAiAnswer.bad{
+  background:#3a1820;
+  border-color:#7a3341;
+  color:#ffd8df;
+}
