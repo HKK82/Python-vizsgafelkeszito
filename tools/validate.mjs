@@ -2,6 +2,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { lessons } from '../js/lessons.js';
+import { checkpointExams } from '../js/checkpoint-exams.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const bridge = resolve(here, 'validator_bridge.py');
@@ -22,6 +23,13 @@ for (const lesson of lessons) {
     const task = lesson.tasks[i];
     payloadCases.push({ task, code: task.solution || '' });
     labels.push({ name:`mintamegoldás ${lesson.id}.${i + 1}`, expected:true });
+  }
+}
+for (const exam of checkpointExams) {
+  for (let i = 0; i < exam.tasks.length; i++) {
+    const task = exam.tasks[i];
+    payloadCases.push({ task, code: task.solution || '' });
+    labels.push({ name:`${exam.id} mintamegoldás ${i + 1}`, expected:true });
   }
 }
 
@@ -66,4 +74,4 @@ if (failures) {
   console.error(`\n${failures} regressziós hiba.`);
   process.exit(1);
 }
-console.log(`OK: 48 mintamegoldás + ${regressions.length} regressziós eset.`);
+console.log(`OK: ${lessons.reduce((n,l)=>n+l.tasks.length,0)} lecke-mintamegoldás + ${checkpointExams.reduce((n,e)=>n+e.tasks.length,0)} kisvizsga-mintamegoldás + ${regressions.length} regressziós eset.`);
