@@ -71,9 +71,73 @@ function mergedStudents() {
       progressPct: Math.min(100, max('progressPct')),
       frontier: max('frontier'),
       currentAttempts: Number(latest.currentAttempts) || 0,
+      examAttempts: group.flatMap(x => Object.entries(x.examAttempts || {}).map(([attemptId, a]) => ({
+        attemptId,
+        ...(a || {})
+      }))),
       connections: group.length
     };
   });
+}
+
+function flattenedExamAttempts() {
+  const rows = [];
+  for (const student of mergedStudents()) {
+    for (const a of student.examAttempts || []) {
+      rows.push({
+        studentName: student.name || 'Tanuló',
+        ...a
+      });
+    }
+  }
+
+  // Próbálkozásszám tanuló + vizsga szerint, időrendben.
+  const ordered = [...rows].sort((a, b) => (Number(a.submittedAt) || 0) - (Number(b.submittedAt) || 0));
+  const counts = new Map();
+  for (const row of ordered) {
+    const key = `${String(row.studentName).toLocaleLowerCase('hu-HU')}|${row.examId || row.examTitle || 'vizsga'}`;
+    const n = (counts.get(key) || 0) + 1;
+    counts.set(key, n);
+    row.attemptNo = n;
+  }
+  return ordered.sort((a, b) => (Number(b.submittedAt) || 0) - (Number(a.submittedAt) || 0));
+}
+
+function examKindText(kind) {
+  if (kind === 'kisvizsga') return 'Kisvizsga';
+  if (kind === 'vizsgaszimulacio') return 'Vizsgaszimuláció';
+  return 'Részvizsga';
+}
+
+function durationText(seconds) {
+  const s = Math.max(0, Number(seconds) || 0);
+  const m = Math.floor(s / 60);
+  const rem = Math.round(s % 60);
+  return `${m}:${String(rem).padStart(2, '0')}`;
+}
+
+function renderExamAttempts() {
+  const el = $('examAttemptRows');
+  if (!el) return;
+  const rows = flattenedExamAttempts();
+  el.innerHTML = rows.length ? rows.map(a => {
+    const pct = Math.max(0, Math.min(100, Number(a.pct) || 0));
+    const state = typeof a.passed === 'boolean'
+      ? (a.passed ? '<span class="examLogPass">teljesítve</span>' : '<span class="examLogFail">nem teljesült</span>')
+      : '<span class="muted">pontozva</span>';
+    const taskInfo = a.taskScores ? `<div class="tiny">Feladatok: ${esc(String(a.taskScores).replace(/\|/g, ' • '))}</div>` : '';
+    return `<tr>
+      <td><strong>${esc(a.studentName)}</strong></td>
+      <td>${examKindText(a.examKind)}</td>
+      <td>${esc(a.examTitle || a.examId || 'Vizsga')}${taskInfo}</td>
+      <td>#${Number(a.attemptNo) || 1}</td>
+      <td><strong>${Number(a.score) || 0}/${Number(a.maxScore) || 0}</strong><div class="tiny">${pct}%</div></td>
+      <td>${state}</td>
+      <td>${durationText(a.durationSeconds)}</td>
+      <td>${a.submittedAt ? new Date(Number(a.submittedAt)).toLocaleString('hu-HU') : '–'}</td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="8" class="muted">Ehhez az órához még nincs naplózott vizsgapróbálkozás.</td></tr>';
+  if ($('examAttemptCount')) $('examAttemptCount').textContent = `${rows.length} próbálkozás`;
 }
 
 function renderStats() {
@@ -82,12 +146,14 @@ function renderStats() {
   const avg = a.length ? Math.round(a.reduce((x, s) => x + (Number(s.progressPct) || 0), 0) / a.length) : 0;
   const activeMin = a.reduce((x, s) => x + mins(s.activeSeconds), 0);
   const hidden = a.reduce((x, s) => x + mins(s.hiddenSeconds), 0);
+  const examCount = flattenedExamAttempts().length;
   $('stats').innerHTML = `
     <div class="statTile"><span class="tiny">Tanulók</span><strong>${a.length}</strong></div>
     <div class="statTile"><span class="tiny">Most aktív</span><strong>${active}</strong></div>
     <div class="statTile"><span class="tiny">Átlagos haladás</span><strong>${avg}%</strong></div>
     <div class="statTile"><span class="tiny">Összes aktív perc</span><strong>${activeMin}</strong></div>
-    <div class="statTile"><span class="tiny">Háttérben perc</span><strong>${hidden}</strong></div>`;
+    <div class="statTile"><span class="tiny">Háttérben perc</span><strong>${hidden}</strong></div>
+    <div class="statTile"><span class="tiny">Vizsgapróbálkozások</span><strong>${examCount}</strong></div>`;
 }
 
 function renderRows() {
@@ -114,6 +180,7 @@ function renderRows() {
   }).join('') : '<tr><td colspan="13" class="muted">Még senki nem csatlakozott ehhez az órához.</td></tr>';
   $('lastUpdate').textContent = `Frissítve: ${new Date().toLocaleTimeString('hu-HU')}`;
   renderStats();
+  renderExamAttempts();
 }
 
 function renderMeta() {
@@ -193,6 +260,31 @@ function exportCsv() {
   URL.revokeObjectURL(url);
 }
 
+function exportExamCsv() {
+  const header = ['Azonosító','Típus','Vizsga','Próbálkozás','Pont','Max pont','Eredmény %','Állapot','Időtartam mp','Feladatonként','Beadás'];
+  const lines = [header, ...flattenedExamAttempts().map(a => [
+    a.studentName,
+    examKindText(a.examKind),
+    a.examTitle || a.examId,
+    a.attemptNo,
+    a.score,
+    a.maxScore,
+    a.pct,
+    typeof a.passed === 'boolean' ? (a.passed ? 'teljesítve' : 'nem teljesült') : 'pontozva',
+    a.durationSeconds,
+    String(a.taskScores || '').replace(/\|/g, ' | '),
+    a.submittedAt ? new Date(Number(a.submittedAt)).toLocaleString('hu-HU') : ''
+  ])];
+  const csv = '\uFEFF' + lines.map(r => r.map(csvSafe).join(';')).join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `python-vizsganaplo-${currentCode || 'export'}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 $('loginBtn').onclick = login;
 $('createClassBtn').onclick = () => create().catch(e => alert(e.message));
 $('openClassBtn').onclick = () => watch($('classCode').value).catch(e => alert(e.message));
@@ -203,6 +295,7 @@ $('toggleClassBtn').onclick = async () => {
   else await reopenClassSession(currentCode);
 };
 $('csvBtn').onclick = exportCsv;
+$('examCsvBtn').onclick = exportExamCsv;
 $('logoutBtn').onclick = async () => { await signOutFirebase(); location.reload(); };
 
 if (!cloudConfigured()) {
