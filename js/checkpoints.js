@@ -74,8 +74,18 @@ export const checkpoints = [
     examId: 'checkpoint-8',
     title: 'Kisvizsga 8 – Osztályok és objektumok',
     afterLesson: 28,
-    nextLesson: null,
+    nextLesson: 29,
     lessonIds: [25, 26, 27, 28],
+    passPct: 80,
+    minTaskPct: 60
+  },
+  {
+    id: 'checkpoint-9',
+    examId: 'checkpoint-9',
+    title: 'Kisvizsga 9 – Csomagok és kódjavítás',
+    afterLesson: 30,
+    nextLesson: null,
+    lessonIds: [29, 30],
     passPct: 80,
     minTaskPct: 60
   }
