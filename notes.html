@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="hu">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://www.gstatic.com; connect-src 'self' https://cdn.jsdelivr.net https://generativelanguage.googleapis.com https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.firebasedatabase.app wss://*.firebasedatabase.app; frame-src https://*.firebaseapp.com https://accounts.google.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://lh3.googleusercontent.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <title>Jegyzet – Python Vizsgafelkészítő</title><link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">🐍 Python <span>Vizsgafelkészítő</span></div>
+  <nav class="topNav"><a href="./index.html">Tanulás</a><a class="active" href="./notes.html">Jegyzet</a><a href="./exams.html">Részvizsgák</a><a href="./progress.html">Haladás</a></nav>
+</header>
+<main class="pageShell">
+  <section class="card simpleCard teacherHero"><div><h1>📝 Saját Python-jegyzet</h1><p class="muted" id="profileText"></p></div><div class="buttonRow"><button id="exportMdBtn" class="secondary">⬇ Jegyzet letöltése</button><button id="printBtn" class="ghost">🖨 Nyomtatás / PDF</button></div></section>
+  <section class="privacyNote">Itt visszanézheted a már feloldott leckék magyarázatait. A saját megjegyzéseid és a tanulás közben elmentett AI-magyarázatok a böngésződben maradnak, és bekerülnek a haladás-exportba is.</section>
+  <div id="notesList" style="margin-top:14px"></div>
+</main>
+<script type="module" src="./js/notes.js"></script>
+</body></html>

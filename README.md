@@ -1,46 +1,40 @@
-# Python Vizsgafelkészítő v3
+# Python Vizsgafelkészítő v4
 
 Böngészőben futó, vizsgafókuszú Python tanulórendszer informatikai rendszer- és alkalmazás-üzemeltető technikus tanulóknak.
 
-## A v3 fő elemei
+## Fő elemek
 
 - 16 alapozó lecke, 48 automatikusan ellenőrzött feladattal;
 - Python futtatás külön Web Workerben, 5 másodperces időkorláttal;
-- AST-alapú szerkezeti ellenőrzés + rejtett futási tesztek;
+- AST-alapú szerkezeti ellenőrzés és több rejtett futási teszt, külön határértékekkel;
 - saját Gemini API-kulccsal működő AI oktató;
 - AI csak magyaráz és rávezet, a továbbjutásról a tesztek döntenek;
 - feladatonként mentett kódpiszkozat;
 - visszanézhető tananyag és saját jegyzet;
 - AI-magyarázat mentése a saját jegyzetbe;
-- 3 részvizsga automatikus részpontozással;
+- részvizsgák automatikus részpontozással;
+- részvizsga-piszkozat és lejárati idő mentése, így egy frissítés nem nullázza a munkát;
 - követelménymátrix és haladás oldal;
-- Firebase Realtime Database alapú élő tanári dashboard;
-- órai aktivitás: aktív/inaktív/háttér/offline, futtatás, ellenőrzés, tippek, haladás;
-- CSV export a tanári dashboardról.
+- opcionális, órakódos órai aktivitáskövetés.
 
 ## Adatminimalizálás
 
-A Firebase-be csak órai aktivitási és haladási metaadat kerül. Nem kerül fel:
+Órai használatnál ne teljes nevet, hanem tanári azonosítót vagy becenevet használjatok.
+
+A Firebase-be csak órai aktivitási és haladási metaadat kerülhet. Nem kerül fel:
 
 - Gemini API-kulcs;
 - tanulói Python-kód;
 - AI-beszélgetés tartalma;
 - billentyűleütés;
-- képernyőkép vagy böngészési előzmény.
+- képernyőkép;
+- böngészési előzmény.
 
-## Firebase
-
-A Firebase projekt be van kötve a `python-vizsgafelkeszito` projekthez. A részletes beállítások a `FIREBASE_SETUP.md` fájlban vannak.
-
-A program Firebase nélkül is működik helyi tanulóprogramként. A jelenlegi kiadásban az órakód és a tanári élő dashboard a Firebase Realtime Database-re van kötve.
+A követett órai metaadatok: aktív/inaktív/háttér/offline állapot, aktuális lecke és feladat, sikertelen próbálkozások száma, haladás, futtatások, ellenőrzések és tippek számlálói.
 
 ## GitHub Pages
 
-A teljes mappa tartalmát a repository gyökerébe kell tenni, majd GitHub → Settings → Pages → Deploy from a branch → `main` / `(root)`.
-
-Tanulói oldal: `index.html`
-
-Tanári dashboard: `teacher.html`
+A repository gyökere statikus webhelyként publikálható GitHub Pages-en (`main` / `(root)`). A kezdőoldal az `index.html`.
 
 ## Tananyag további bővítése
 

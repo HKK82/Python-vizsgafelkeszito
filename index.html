@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="hu">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://www.gstatic.com; connect-src 'self' https://cdn.jsdelivr.net https://generativelanguage.googleapis.com https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.firebasedatabase.app wss://*.firebasedatabase.app; frame-src https://*.firebaseapp.com https://accounts.google.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://lh3.googleusercontent.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <title>Python Vizsgafelkészítő</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <div id="setupOverlay" class="overlay hidden">
+    <section class="modal card" aria-labelledby="setupTitle">
+      <h1 id="setupTitle">🐍 Python Vizsgafelkészítő</h1>
+      <p class="lead">A cél: a vizsgán kapott Python-feladatot önállóan fel tudd bontani, felépíteni, lefuttatni és kijavítani.</p>
+
+      <label for="studentName">Tanulói azonosító / becenév</label>
+      <input id="studentName" type="text" autocomplete="off" placeholder="pl. V07">
+      <p class="tiny">Órai használatnál ne teljes nevet adj meg. Használj a tanártól kapott azonosítót vagy becenevet.</p>
+      <div id="profileList" class="profileList"></div>
+
+      <label for="classCodeInput">Órakód <span class="muted">(opcionális – ha a tanár élőben követi az órát)</span></label>
+      <input id="classCodeInput" type="text" autocomplete="off" spellcheck="false" placeholder="pl. PY-7K3MZ">
+      <p class="tiny">Órakóddal az oktató az aktivitási állapotot (aktív / inaktív / háttér / offline), az aktuális feladatot, a sikertelen próbálkozások számát, a haladást, valamint a futtatások, ellenőrzések és tippek számlálóit látja. A Python-kódodat, a Gemini API-kulcsodat, billentyűleütéseket, képernyőképet és böngészési előzményt nem küldünk fel.</p>
+
+      <label for="apiKeyInput">Saját Gemini API-kulcs <span class="muted">(opcionális, AI-segítséghez)</span></label>
+      <input id="apiKeyInput" type="password" autocomplete="off" spellcheck="false" placeholder="AIza...">
+      <label class="checkLabel"><input id="rememberKey" type="checkbox"> Jegyezze meg ezen a saját eszközön</label>
+      <p class="tiny">Közös iskolai gépen ne jelöld be. Alapból a kulcs csak az aktuális böngésző-munkamenetben marad. A tanulói Python-kód külön Web Workerben fut, így nem fér hozzá ehhez a kulcshoz.</p>
+
+      <div class="buttonRow">
+        <button id="startBtn" class="primary">Indítás AI-val</button>
+        <button id="startNoAiBtn" class="secondary">Indítás AI nélkül</button>
+        <button id="clearKeyBtn" class="ghost">Tárolt API-kulcs törlése</button>
+      </div>
+    </section>
+  </div>
+
+  <header class="topbar">
+    <div class="brand">🐍 Python <span>Vizsgafelkészítő</span></div>
+    <nav class="topNav">
+      <a class="active" href="./index.html">Tanulás</a>
+      <a href="./notes.html">Jegyzet</a>
+      <a href="./exams.html">Részvizsgák</a>
+      <a href="./progress.html">Haladás</a>
+    </nav>
+    <div class="topStatus">
+      <span id="cloudStatus" class="runtime">Óra: helyi mód</span>
+      <span id="aiModelStatus">AI: saját kulcs</span>
+      <span id="runtimeStatus" class="runtime loading">Python betöltése…</span>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="card sidebar">
+      <div class="studentHeader">
+        <div>
+          <strong id="studentLabel">Tanuló</strong>
+          <div class="tiny">Saját helyi haladás</div>
+        </div>
+        <button id="newStudentBtn" class="iconBtn" title="Új tanuló">＋</button>
+      </div>
+      <div class="progress"><div id="progressBar"></div></div>
+      <div id="progressText" class="tiny">0 / 0 feladat kész</div>
+      <nav id="lessonList" class="lessonList" aria-label="Leckék"></nav>
+      <div class="sideActions">
+        <button id="apiBtn" class="secondary full">🔑 API-kulcs / profil</button>
+        <button id="exportBtn" class="secondary full">⬇ Haladás export</button>
+        <button id="importBtn" class="secondary full">⬆ Haladás import</button>
+        <input id="importFile" type="file" accept="application/json,.json" hidden>
+        <button id="resetProgressBtn" class="danger full">Haladás nullázása</button>
+      </div>
+    </aside>
+
+    <main id="mainCard" class="card mainCard">
+      <div class="lessonTop">
+        <div class="buttonRow compact">
+          <span id="lessonBadge" class="badge">1. lecke</span>
+          <span id="completedBadge" class="badge done hidden">✓ Teljesítve</span>
+        </div>
+        <div class="tiny" id="taskCounter"></div>
+      </div>
+
+      <h1 id="lessonTitle"></h1>
+      <p id="lessonObjective" class="objective"></p>
+      <section id="lessonExplain" class="explain"></section>
+      <div class="buttonRow compact">
+        <button id="aiExplainBtn" class="secondary">🤖 Magyarázd el másképp</button>
+      </div>
+
+      <section class="taskCard">
+        <div class="taskHead">
+          <h2>Feladat</h2>
+          <span id="attemptText" class="tiny"></span>
+        </div>
+        <div id="taskText"></div>
+      </section>
+
+      <section class="editorSection">
+        <h2>A kódod</h2>
+        <textarea id="codeEditor" class="codeEditor" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off" aria-label="Python kódszerkesztő"></textarea>
+
+        <details class="inputDetails">
+          <summary>Bemeneti adatok kézi futtatáshoz</summary>
+          <p class="tiny">Ha a program <code>input()</code>-ot használ, a próbaadatokat soronként add meg.</p>
+          <textarea id="stdinBox" class="stdinBox" spellcheck="false" autocapitalize="off" autocorrect="off"></textarea>
+        </details>
+
+        <div class="buttonRow">
+          <button id="runBtn" class="secondary" disabled>▶ Futtatás</button>
+          <button id="checkBtn" class="success" disabled>✓ Ellenőrzés</button>
+          <button id="hintBtn" class="secondary">💡 Helyi tipp</button>
+          <button id="aiHintBtn" class="secondary">🤖 AI-tipp</button>
+          <button id="solutionBtn" class="ghost" disabled>Mintamegoldás</button>
+        </div>
+
+        <div id="solutionPanel" class="solutionPanel hidden">
+          <strong>Mintamegoldás</strong>
+          <pre><code id="solutionCode"></code></pre>
+          <p class="tiny">A cél nem a másolás. Nézd végig soronként, mit miért csinál, majd a következő feladatot próbáld önállóan.</p>
+        </div>
+
+        <div id="inputEchoWrap" class="ioBlock hidden">
+          <h3>Felhasznált bemenet</h3>
+          <pre id="inputEcho"></pre>
+        </div>
+        <div class="ioBlock">
+          <h3>Kimenet</h3>
+          <pre id="output">A Python környezet betöltése folyamatban…</pre>
+        </div>
+        <div id="feedback" class="feedback hidden"></div>
+
+        <div class="taskNav">
+          <button id="prevBtn" class="ghost">← Előző</button>
+          <button id="nextBtn" class="primary hidden">Következő feladat →</button>
+        </div>
+      </section>
+    </main>
+
+    <aside class="card tutorPanel">
+      <h2>🤖 AI oktató</h2>
+      <p class="tiny">Az AI magyaráz és rávezet. Nem ő dönti el a továbbjutást, és nem hívjuk automatikusan: csak akkor fogy az API-kvóta, amikor te kérsz AI-segítséget.</p>
+      <div id="messages" class="messages"></div>
+      <button id="saveAiNoteBtn" class="secondary full" disabled>📝 Utolsó AI-magyarázat mentése a jegyzetbe</button>
+      <div class="chatBox">
+        <textarea id="chatInput" placeholder="Mit nem értesz? Kérdezz rá…" autocapitalize="sentences"></textarea>
+        <button id="sendBtn" class="primary">Küldés</button>
+      </div>
+      <button id="clearChatBtn" class="ghost full">AI-beszélgetés törlése</button>
+    </aside>
+  </div>
+
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>

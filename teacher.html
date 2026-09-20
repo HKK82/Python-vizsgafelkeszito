@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="hu">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://www.gstatic.com; connect-src 'self' https://cdn.jsdelivr.net https://generativelanguage.googleapis.com https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.firebasedatabase.app wss://*.firebasedatabase.app; frame-src https://*.firebaseapp.com https://accounts.google.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://lh3.googleusercontent.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <title>Oktatói nézet</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">👩‍🏫 Python <span>Oktatói nézet</span></div>
+  <div class="topStatus"><span id="firebaseState" class="runtime loading">Firebase ellenőrzése…</span></div>
+</header>
+<main class="pageShell">
+  <section class="card simpleCard" id="loginCard">
+    <div class="teacherHero"><div><h1>Élő órai követés</h1><p class="muted">A rendszer csak az órai haladási és aktivitási metaadatokat kezeli. Nem küldi fel a tanulói Python-kódot, a Gemini API-kulcsot, billentyűleütéseket, képernyőképet vagy böngészési előzményt.</p></div><button id="loginBtn" class="primary">Belépés Google-fiókkal</button></div>
+    <p id="loginInfo" class="tiny"></p>
+  </section>
+  <section id="dashboard" class="hidden">
+    <section class="card simpleCard">
+      <div class="teacherControls">
+        <div><label>Óra megnevezése</label><input id="classTitle" placeholder="pl. Python gyakorlás"></div>
+        <button id="createClassBtn" class="primary">Új óra indítása</button>
+        <button id="logoutBtn" class="ghost">Kilépés</button>
+      </div>
+      <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
+      <div class="teacherControls"><div><label>Meglévő órakód</label><input id="classCode" placeholder="PY-ABCDE"></div><button id="openClassBtn" class="secondary">Megnyitás</button><button id="copyCodeBtn" class="ghost">Kód másolása</button></div>
+    </section>
+    <section id="sessionCard" class="card simpleCard hidden"><div class="teacherHero"><div><div class="tiny">Aktuális órakód</div><div id="classCodeBig" class="classCodeBig">–</div><div id="sessionTitle" class="muted"></div></div><div class="buttonRow"><button id="toggleClassBtn" class="danger">Óra lezárása</button><button id="csvBtn" class="secondary">⬇ CSV export</button></div></div></section>
+    <section class="statTiles" id="stats"></section>
+    <section class="card simpleCard" style="margin-top:14px">
+      <div class="teacherHero"><div><h2>Tanulók élőben</h2><p class="tiny">🟢 aktív: 90 mp-en belül dolgozott • 🟡 inaktív • 🟠 az oldal háttérben van • ⚪ offline. Látható még az aktuális feladat, a sikertelen próbálkozások száma, a haladás, a futtatások, ellenőrzések és tippek száma. A telefonhasználatot a rendszer nem figyeli.</p></div><span id="lastUpdate" class="tiny"></span></div>
+      <div class="dashboardTableWrap"><table class="dashboardTable"><thead><tr><th>Azonosító</th><th>Állapot</th><th>Hol tart</th><th>Próbák</th><th>Haladás</th><th>Aktív</th><th>Inaktív</th><th>Háttér</th><th>Futtatás</th><th>Ellenőrzés</th><th>Sikeres</th><th>Tipp / AI</th><th>Utolsó aktivitás</th></tr></thead><tbody id="studentRows"></tbody></table></div>
+    </section>
+  </section>
+</main>
+<script type="module" src="./js/teacher.js"></script>
+</body>
+</html>
