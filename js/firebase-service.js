@@ -209,3 +209,35 @@ export async function subscribeClassMeta(code, callback) {
   const r = s.f.ref(s.db, `classes/${classCode}/meta`);
   return s.f.onValue(r, snap => callback(snap.val() || null));
 }
+
+
+export async function logStudentExamAttempt(code, uid, attempt) {
+  const s = await init();
+  if (!s || !code || !uid) return null;
+  const classCode = cleanCode(code);
+  const attemptsRef = s.f.ref(s.db, `classes/${classCode}/students/${uid}/examAttempts`);
+  const newRef = s.f.push(attemptsRef);
+
+  const taskScores = Array.isArray(attempt?.taskResults)
+    ? attempt.taskResults
+        .map((r, i) => `${i + 1}:${Number(r?.score) || 0}/${Number(r?.maxScore) || 0}`)
+        .join('|')
+        .slice(0, 240)
+    : '';
+
+  const payload = {
+    examId: String(attempt?.examId || '').slice(0, 80),
+    examTitle: String(attempt?.examTitle || 'Vizsga').slice(0, 160),
+    examKind: String(attempt?.examKind || 'reszvizsga').slice(0, 40),
+    score: Number(attempt?.score) || 0,
+    maxScore: Math.max(0, Number(attempt?.maxScore) || 0),
+    pct: Math.max(0, Math.min(100, Number(attempt?.pct) || 0)),
+    durationSeconds: Math.max(0, Math.min(21600, Number(attempt?.durationSeconds) || 0)),
+    taskScores,
+    submittedAt: s.f.serverTimestamp()
+  };
+  if (typeof attempt?.passed === 'boolean') payload.passed = attempt.passed;
+
+  await s.f.set(newRef, payload);
+  return newRef.key;
+}
