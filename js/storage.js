@@ -245,7 +245,11 @@ export class ProgressStore {
     normalizeProfile(p);
     const key = String(lessonId);
     p.savedExplanations[key] ||= [];
-    p.savedExplanations[key].push({ text: String(text).trim(), savedAt: new Date().toISOString() });
+    const cleanText = String(text).trim();
+    const last = p.savedExplanations[key][p.savedExplanations[key].length - 1];
+    if (!last || last.text !== cleanText) {
+      p.savedExplanations[key].push({ text: cleanText, savedAt: new Date().toISOString() });
+    }
     if (p.savedExplanations[key].length > 20) p.savedExplanations[key] = p.savedExplanations[key].slice(-20);
     p.updatedAt = new Date().toISOString();
     this.persist();
