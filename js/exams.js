@@ -129,7 +129,7 @@ export const exams = [
   },
   {
     id:'agazati-8-14-18',
-    requiredCheckpoint:'checkpoint-8',
+    requiredCheckpoint:'checkpoint-9',
     title:'Vizsgaszimuláció – 8 + 14 + 18 pont',
     description:'Három egymásra épülő, összesen 40 pontos Python-feladat. Csak a fájlkezelés és objektumkezelés megtanulása után nyílik meg. Nincs AI, tipp vagy mintamegoldás; részpont jár a részben helyes kódért.',
     durationMinutes:45,
@@ -191,9 +191,9 @@ export const exams = [
   },
   {
     id:'halado-vizsgaelemek',
-    requiredCheckpoint:'checkpoint-8',
+    requiredCheckpoint:'checkpoint-9',
     title:'Részvizsga 4 – Modulok, fájlok és objektumok',
-    description:'A technikusi Python-feladatokhoz fontos haladó elemek külön gyakorlása. A 17–28. leckék és a hozzájuk tartozó kisvizsgák teljesítése után nyílik meg.',
+    description:'A technikusi Python-feladatokhoz fontos haladó elemek külön gyakorlása. A teljes, 1–30. leckés tananyag és a hozzájuk tartozó kisvizsgák teljesítése után nyílik meg.',
     durationMinutes:30,
     tasks:[
       {
