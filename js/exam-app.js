@@ -74,7 +74,7 @@ function render() {
     const active = activeSession(ex.id);
     return `<section class="card examCard" data-exam="${ex.id}">
       <div class="teacherHero"><div><h2>${esc(ex.title)}</h2><p class="muted">${esc(ex.description)}</p></div>
-      <div><span class="badge">${ex.durationMinutes} perc</span>${last ? `<div class="tiny">Legutóbb: ${last.score}/${last.maxScore} pont</div>` : ''}</div></div>
+      <div><span class="badge">${ex.durationMinutes} perc</span>${ex.examMode ? '<span class="examModeTag">VIZSGASZIMULÁCIÓ</span>' : ''}${last ? `<div class="tiny">Legutóbb: ${last.score}/${last.maxScore} pont</div>` : ''}</div></div>
       <button class="primary" data-start="${ex.id}" ${!p ? 'disabled' : ''}>${active ? 'Részvizsga folytatása' : 'Részvizsga indítása'}</button>
       <div class="examBody hidden" data-body="${ex.id}"></div>
     </section>`;
@@ -150,6 +150,21 @@ async function scoreTask(task, code) {
       score += t.points;
       details.push(`✓ Rejtett futási teszt: +${t.points}`);
     } else details.push(`✗ Rejtett futási teszt: 0/${t.points}`);
+  }
+  for (const t of task.fileTests || []) {
+    const readFiles = t.readFiles || Object.keys(t.expectedFiles || {});
+    const res = await runner.executeWithFiles(code, t.inputs || [], t.files || {}, readFiles);
+    const stdoutOk = res.ok && equalLines(res.stdoutLines || [], t.expectedLines || []);
+    const filesOk = Object.entries(t.expectedFiles || {}).every(([name, expected]) => {
+      const actual = res.files?.[name];
+      return String(actual ?? '').replace(/\r\n/g, '\n') === String(expected).replace(/\r\n/g, '\n');
+    });
+    if (stdoutOk && filesOk) {
+      score += t.points;
+      details.push(`✓ Fájlteszt: +${t.points}`);
+    } else {
+      details.push(`✗ Fájlteszt: 0/${t.points}`);
+    }
   }
   for (const t of task.functionTests || []) {
     const res = await runner.functionTest(code, t.functionName, t.args || []);
