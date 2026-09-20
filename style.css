@@ -400,3 +400,75 @@ h3 { font-size: 14px; color: #c9d7ee; margin: 0 0 6px; }
 @media(max-width:700px){
   .teacherExamControls{grid-template-columns:1fr}
 }
+
+/* v6: pedagógiai riportok */
+.reportCard{overflow:visible}
+.reportControls{
+  display:grid;
+  grid-template-columns:minmax(220px,1fr) auto auto auto auto;
+  gap:9px;
+  align-items:end;
+  margin:14px 0;
+  padding:12px;
+  border:1px solid var(--line);
+  border-radius:11px;
+  background:#0d182b;
+}
+.reportControls label{display:grid;gap:5px;font-size:12px;font-weight:800;color:#c8d7ee}
+.reportControls select{
+  width:100%;padding:10px 11px;border-radius:9px;border:1px solid #395078;
+  background:#091325;color:#fff
+}
+.reportCheck{display:flex!important;align-items:center;gap:7px;padding:10px 2px;white-space:nowrap}
+.reportCheck input{width:auto}
+.reportOutput{margin-top:12px}
+.reportEmpty{
+  padding:24px;border:1px dashed #405577;border-radius:12px;text-align:center;color:var(--muted)
+}
+.reportSheet{
+  background:#f7f9fc;color:#172033;border-radius:14px;padding:28px;
+  border:1px solid #ccd5e3;box-shadow:0 18px 44px rgba(0,0,0,.2)
+}
+.reportSheet .muted{color:#627089}
+.reportHeader{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;border-bottom:2px solid #dbe3ef;padding-bottom:16px;margin-bottom:18px}
+.reportHeader h1{margin:3px 0 4px;color:#10213a;font-size:29px}
+.reportKicker{font-size:11px;font-weight:900;letter-spacing:.12em;color:#416da8}
+.reportBadge{padding:7px 10px;border-radius:999px;background:#e5eefc;color:#285990;font-weight:850;font-size:12px;white-space:nowrap}
+.reportSummaryGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:16px 0 20px}
+.reportSummaryGrid>div{padding:12px;border:1px solid #d9e1ec;border-radius:10px;background:#fff}
+.reportSummaryGrid span,.reportSummaryGrid small{display:block;color:#64728a;font-size:11px}
+.reportSummaryGrid strong{display:block;color:#172033;font-size:20px;margin:3px 0}
+.reportSection{margin:18px 0}
+.reportSection h2{color:#19345b;font-size:17px;margin:0 0 8px}
+.reportSection p,.reportSection li{color:#29374b;line-height:1.55}
+.reportSection ul{margin:7px 0 0 20px;padding:0}
+.reportTwoCol{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.reportTable{width:100%;border-collapse:collapse;background:#fff;border:1px solid #d9e1ec}
+.reportTable th,.reportTable td{padding:9px 10px;border-bottom:1px solid #e1e7f0;text-align:left;font-size:12px;color:#243247}
+.reportTable th{background:#edf3fb;color:#294b77;font-weight:850}
+.reportNote{padding:12px 14px;border-radius:10px;background:#eef3f8;border:1px solid #d6e0ec}
+.reportNote p{font-size:12px;margin:0}
+@media(max-width:1000px){
+  .reportControls{grid-template-columns:1fr 1fr}
+  .reportSummaryGrid{grid-template-columns:repeat(2,1fr)}
+  .reportTwoCol{grid-template-columns:1fr}
+}
+@media(max-width:650px){
+  .reportControls,.reportSummaryGrid{grid-template-columns:1fr}
+  .reportSheet{padding:16px}
+  .reportHeader{display:grid}
+}
+@media print{
+  body.printingReport{background:#fff!important;color:#000!important}
+  body.printingReport > *{display:none!important}
+  body.printingReport main.pageShell{display:block!important;max-width:none!important;padding:0!important}
+  body.printingReport #dashboard{display:block!important}
+  body.printingReport #dashboard > *{display:none!important}
+  body.printingReport #reportCard{display:block!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important;background:#fff!important}
+  body.printingReport #reportCard > *{display:none!important}
+  body.printingReport #reportPrintArea{display:block!important;margin:0!important}
+  body.printingReport .reportSheet{display:block!important;box-shadow:none!important;border:0!important;border-radius:0!important;padding:12mm!important;background:#fff!important;color:#111!important}
+  body.printingReport .reportTable{break-inside:auto}
+  body.printingReport .reportTable tr{break-inside:avoid}
+  @page{size:A4;margin:8mm}
+}
