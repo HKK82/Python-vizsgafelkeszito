@@ -109,6 +109,7 @@ export async function createClassSession({ code, title }) {
     createdAt: s.f.serverTimestamp(),
     updatedAt: s.f.serverTimestamp()
   });
+  try { await rememberTeacherClassSession(classCode); } catch (err) { console.warn('Óraelőzmény-index nem frissült:', err); }
   return classCode;
 }
 
@@ -121,6 +122,7 @@ export async function closeClassSession(code) {
     closedAt: s.f.serverTimestamp(),
     updatedAt: s.f.serverTimestamp()
   });
+  try { await rememberTeacherClassSession(classCode); } catch (err) { console.warn('Óraelőzmény-index nem frissült:', err); }
 }
 
 export async function reopenClassSession(code) {
@@ -132,6 +134,7 @@ export async function reopenClassSession(code) {
     closedAt: null,
     updatedAt: s.f.serverTimestamp()
   });
+  try { await rememberTeacherClassSession(classCode); } catch (err) { console.warn('Óraelőzmény-index nem frissült:', err); }
 }
 
 export async function joinClassAsStudent(code, name) {
@@ -240,4 +243,45 @@ export async function logStudentExamAttempt(code, uid, attempt) {
 
   await s.f.set(newRef, payload);
   return newRef.key;
+}
+
+
+async function teacherClassIndexRef(s, uid, code = '') {
+  const suffix = code ? `/${cleanCode(code)}` : '';
+  return s.f.ref(s.db, `teacherClasses/${uid}${suffix}`);
+}
+
+export async function rememberTeacherClassSession(code, meta = null) {
+  const s = await init();
+  if (!s) return false;
+  const user = s.auth.currentUser;
+  if (!user || user.isAnonymous) return false;
+
+  const classCode = cleanCode(code);
+  const classMeta = meta || await getClassMeta(classCode);
+  if (!classMeta || classMeta.teacherUid !== user.uid) return false;
+
+  const r = await teacherClassIndexRef(s, user.uid, classCode);
+  await s.f.update(r, {
+    code: classCode,
+    title: String(classMeta.title || 'Python óra').slice(0, 120),
+    open: !!classMeta.open,
+    createdAt: Number(classMeta.createdAt) || s.f.serverTimestamp(),
+    updatedAt: s.f.serverTimestamp()
+  });
+  return true;
+}
+
+export async function listTeacherClassSessions() {
+  const s = await init();
+  if (!s) return [];
+  const user = s.auth.currentUser;
+  if (!user || user.isAnonymous) return [];
+
+  const r = await teacherClassIndexRef(s, user.uid);
+  const snap = await s.f.get(r);
+  const raw = snap.exists() ? snap.val() : {};
+  return Object.values(raw || {})
+    .filter(x => x && x.code)
+    .sort((a, b) => (Number(b.updatedAt) || Number(b.createdAt) || 0) - (Number(a.updatedAt) || Number(a.createdAt) || 0));
 }
