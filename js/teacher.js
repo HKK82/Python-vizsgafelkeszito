@@ -29,6 +29,14 @@ function esc(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;' }[c]));
 }
 function mins(sec) { return Math.round((Number(sec) || 0) / 60); }
+
+function withTimeout(promise, ms, label = 'Művelet') {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${label}: időtúllépés`)), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
 function relative(ts) {
   if (!ts) return '–';
   const d = Math.max(0, Date.now() - Number(ts));
@@ -200,28 +208,65 @@ function renderMeta() {
 async function refreshTeacherHistory() {
   const select = $('teacherHistory');
   const info = $('teacherHistoryInfo');
+  const openBtn = $('openHistoryBtn');
   if (!select) return;
+
+  select.disabled = true;
+  openBtn.disabled = true;
+  select.innerHTML = '<option value="">Felhős óraelőzmények betöltése…</option>';
+  if (info) info.textContent = 'Kapcsolódás a Firebase óraelőzményhez…';
+
   try {
-    const sessions = await listTeacherClassSessions();
-    if (!sessions.length) {
+    const sessions = await withTimeout(listTeacherClassSessions(), 7000, 'Óraelőzmény betöltése');
+
+    // Az aktuálisan megnyitott órát mindig tegyük bele helyi tartalékként,
+    // még akkor is, ha az index épp most jött létre.
+    const merged = [...sessions];
+    if (currentCode && meta && !merged.some(s => s.code === currentCode)) {
+      merged.unshift({
+        code: currentCode,
+        title: meta.title || 'Python óra',
+        open: !!meta.open,
+        createdAt: Number(meta.createdAt) || 0,
+        updatedAt: Number(meta.updatedAt) || Date.now()
+      });
+    }
+
+    if (!merged.length) {
       select.innerHTML = '<option value="">Még nincs felhőben mentett óraelőzmény</option>';
-      select.disabled = true;
-      $('openHistoryBtn').disabled = true;
-      if (info) info.textContent = 'A böngésző törlése után is megmaradó lista az újonnan megnyitott/indított órákkal épül fel.';
+      if (info) info.textContent = 'Az újonnan indított vagy kézzel megnyitott órák ezután bekerülnek ide. A régi órákat egyszer az órakódjukkal kell megnyitni.';
       return;
     }
+
     select.disabled = false;
-    $('openHistoryBtn').disabled = false;
-    select.innerHTML = sessions.map(s => {
+    openBtn.disabled = false;
+    select.innerHTML = merged.map(s => {
       const when = s.createdAt ? new Date(Number(s.createdAt)).toLocaleString('hu-HU') : '';
       return `<option value="${esc(s.code)}">${esc(s.code)} – ${esc(s.title || 'Python óra')} – ${s.open ? 'nyitva' : 'lezárva'}${when ? ' – ' + when : ''}</option>`;
     }).join('');
-    if (info) info.textContent = `${sessions.length} korábbi óra a Firebase-ben.`;
+    if (currentCode) select.value = currentCode;
+    if (info) info.textContent = `${merged.length} óra elérhető. A lista Firebase-ben marad meg, nem a böngésző sütijeiben.`;
   } catch (err) {
-    select.innerHTML = '<option value="">Óraelőzmény nem olvasható</option>';
-    select.disabled = true;
-    $('openHistoryBtn').disabled = true;
-    if (info) info.textContent = 'A felhős óraelőzményhez még publikálni kell a teacherClasses Firebase-szabályt.';
+    const fallback = currentCode && meta
+      ? [{ code: currentCode, title: meta.title || 'Python óra', open: !!meta.open }]
+      : [];
+
+    if (fallback.length) {
+      select.disabled = false;
+      openBtn.disabled = false;
+      select.innerHTML = fallback.map(s =>
+        `<option value="${esc(s.code)}">${esc(s.code)} – ${esc(s.title)} – ${s.open ? 'nyitva' : 'lezárva'} (aktuális)</option>`
+      ).join('');
+    } else {
+      select.innerHTML = '<option value="">Felhős óraelőzmény nem érhető el</option>';
+    }
+
+    if (info) {
+      info.innerHTML = '<strong>Az óraelőzmény-index még nincs engedélyezve a Firebase Rules-ban.</strong> ' +
+        'A már ismert órakódokat továbbra is meg tudod nyitni a „Meglévő órakód” mezővel. ' +
+        'A teacherClasses szabály publikálása után a lista tartósan működik cookie-törlés után is.';
+    }
+    console.warn('Óraelőzmény betöltési hiba:', err);
   }
 }
 
@@ -241,7 +286,10 @@ async function watch(code) {
     console.warn('Az óra megnyílt, de az óraelőzmény-index nem frissült:', err);
   }
   unsubStudents = await subscribeStudents(currentCode, data => { students = data || {}; renderRows(); });
-  unsubMeta = await subscribeClassMeta(currentCode, data => { meta = data; renderMeta(); });
+  unsubMeta = await subscribeClassMeta(currentCode, data => {
+    meta = data;
+    renderMeta();
+  });
   $('classCode').value = currentCode;
 }
 
