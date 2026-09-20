@@ -105,6 +105,10 @@ export class PythonRunner {
     return this.request({ action: 'execute', code, inputs });
   }
 
+  executeWithFiles(code, inputs = [], files = {}, readFiles = []) {
+    return this.request({ action: 'executeWithFiles', code, inputs, files, readFiles });
+  }
+
   functionTest(code, functionName, args = []) {
     return this.request({ action: 'functionTest', code, functionName, args });
   }
