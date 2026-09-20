@@ -4,6 +4,8 @@ import contextlib
 import io
 import json
 import traceback
+import os
+import tempfile
 from collections import Counter, deque
 
 # A tanulói kód külön névtérben fut, de ugyanabban a Python interpreterben.
@@ -181,6 +183,33 @@ def execute_code(code, inputs=None):
         }
 
 
+def execute_code_with_files(code, inputs=None, files=None, read_files=None):
+    inputs = inputs or []
+    files = files or {}
+    read_files = read_files or []
+    old_cwd = os.getcwd()
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            os.chdir(tmp)
+            for name, content in files.items():
+                safe_name = os.path.basename(str(name))
+                with open(safe_name, "w", encoding="utf-8", newline="") as fh:
+                    fh.write(str(content))
+            result = execute_code(code, inputs)
+            outputs = {}
+            for name in read_files:
+                safe_name = os.path.basename(str(name))
+                try:
+                    with open(safe_name, "r", encoding="utf-8") as fh:
+                        outputs[str(name)] = fh.read().replace("\r\n", "\n")
+                except FileNotFoundError:
+                    outputs[str(name)] = None
+            result["files"] = outputs
+            return result
+    finally:
+        os.chdir(old_cwd)
+
+
 def test_function(code, function_name, args):
     analysis = analyze_code(code)
     if not analysis["ok"]:
@@ -227,6 +256,14 @@ def handle_request(payload_json):
         return _JSON_DUMPS(analyze_code(payload.get("code", "")), ensure_ascii=False)
     if action == "execute":
         result = execute_code(payload.get("code", ""), payload.get("inputs", []))
+        return _JSON_DUMPS(result, ensure_ascii=False)
+    if action == "executeWithFiles":
+        result = execute_code_with_files(
+            payload.get("code", ""),
+            payload.get("inputs", []),
+            payload.get("files", {}),
+            payload.get("readFiles", []),
+        )
         return _JSON_DUMPS(result, ensure_ascii=False)
     if action == "functionTest":
         result = test_function(
