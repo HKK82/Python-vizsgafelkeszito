@@ -131,7 +131,7 @@ export const exams = [
     id:'agazati-8-14-18',
     requiredCheckpoint:'checkpoint-9',
     title:'Vizsgaszimuláció – 8 + 14 + 18 pont',
-    description:'Három egymásra épülő, összesen 40 pontos Python-feladat. Csak a fájlkezelés és objektumkezelés megtanulása után nyílik meg. Nincs AI, tipp vagy mintamegoldás; részpont jár a részben helyes kódért.',
+    description:'Három egymásra épülő, összesen 40 pontos Python-feladat. Csak a teljes 1–30. leckés tananyag és mind a 9 kötelező kisvizsga teljesítése után nyílik meg. Nincs AI, tipp vagy mintamegoldás; részpont jár a részben helyes kódért.',
     durationMinutes:45,
     examMode:true,
     tasks:[
