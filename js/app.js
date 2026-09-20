@@ -80,7 +80,7 @@ function syntaxCheatText(lessonId) {
   const cheats = {
     1: '<code>print("szöveg")</code><br><code>print(változó)</code>',
     2: '<code>nev = "Anna"</code><br><code>ram = 16</code><br><code>print(ram)</code>',
-    3: '<code>nev = input("Neved: ")</code><br><code>print(nev)</code>',
+    3: '<code>valtozo = input("Kérdés a felhasználónak: ")</code><br><code>print(valtozo)</code>',
     4: '<code>kor = int(input("Kor: "))</code><br><code>ar = float(input("Ár: "))</code>',
     5: '<code>a + b</code> &nbsp; <code>a - b</code> &nbsp; <code>a * b</code> &nbsp; <code>a / b</code>',
     6: '<code>a % b</code> → maradék<br><code>a // b</code> → egész hányados',
@@ -103,7 +103,7 @@ function practiceStage(taskIndex) {
     return {
       number: '1/3',
       title: 'Tanulás – nézd meg a mintát',
-      text: 'Most még látod a magyarázatot és a szintaxist. A cél, hogy először megértsd, hogyan épül fel ez a Python-rész.',
+      text: 'Most még látsz egy hasonló példát és a szintaxis mintáját, de nem az aktuális feladat kész megoldását. A cél, hogy megértsd a szerkezetet, majd te alkalmazd.',
       showExplanation: true,
       showMicroTip: true,
       showCheat: true,
