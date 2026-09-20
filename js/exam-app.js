@@ -407,7 +407,10 @@ async function submitExam(ex) {
       diagnostics: r.diagnostics || []
     });
     const aiButton = failed
-      ? `<button type="button" class="secondary examAiBtn" data-ai-review="${ex.id}-${i}">🤖 AI: magyarázd el, mi volt a gond</button><div class="hidden" data-ai-answer="${ex.id}-${i}"></div>`
+      ? `<div class="examAiCallout">
+        <div class="examAiCalloutText">⚠️ Ezt olvasd el, mielőtt továbbmész, majd menj vissza gyakorolni.</div>
+        <button type="button" class="danger examAiBtn" data-ai-review="${ex.id}-${i}">🤖 AI: mondd el pontosan, mi volt a gond</button>
+      </div><div class="hidden" data-ai-answer="${ex.id}-${i}"></div>`
       : '';
     box.innerHTML = `<strong>${r.score}/${ex.tasks[i].points} pont</strong><pre>${esc(r.details.join('\n'))}</pre>${renderDiagnosticList(r.diagnostics || [])}${aiButton}`;
     body.querySelector(`[data-code="${ex.id}-${i}"]`).disabled = true;
