@@ -123,5 +123,107 @@ export const exams = [
         ]
       }
     ]
+  },
+  {
+    id:'agazati-8-14-18',
+    title:'Vizsgaszimuláció – 8 + 14 + 18 pont',
+    description:'Három egymásra épülő, összesen 40 pontos Python-feladat. Nincs AI, tipp vagy mintamegoldás; részpont jár a részben helyes kódért.',
+    durationMinutes:45,
+    examMode:true,
+    tasks:[
+      {
+        title:'1. feladat – Működő gépek', points:8,
+        text:'Kérd be az összes gép és a hibás gépek számát egész számként. Írd ki egyetlen sorban a működő gépek számát.', starter:'',
+        checks:[
+          {label:'Két int() típuskonverzió',points:1,type:'call',name:'int',min:2},
+          {label:'Kivonás használata',points:1,type:'op',name:'Sub',min:1}
+        ],
+        tests:[
+          {inputs:['30','4'],expectedLines:['26'],points:3},
+          {inputs:['12','0'],expectedLines:['12'],points:3}
+        ]
+      },
+      {
+        title:'2. feladat – kritikus_db()', points:14,
+        text:'Írj kritikus_db(ertekek) függvényt. A paraméter egy számlista. A függvény adja vissza, hány érték legalább 90. Ne kérj be adatot és ne írj ki semmit.', starter:'def kritikus_db(ertekek):\n    ',
+        checks:[
+          {label:'kritikus_db() függvény',points:2,type:'function',name:'kritikus_db',minArgs:1},
+          {label:'for ciklus',points:2,type:'node',name:'For',min:1},
+          {label:'if feltétel',points:2,type:'node',name:'If',min:1}
+        ],
+        functionTests:[
+          {functionName:'kritikus_db',args:[[95,70,91,20]],expected:2,points:3},
+          {functionName:'kritikus_db',args:[[90,89,100,90]],expected:3,points:3},
+          {functionName:'kritikus_db',args:[[]],expected:0,points:2}
+        ]
+      },
+      {
+        title:'3. feladat – Szerverfájl és objektumok', points:18,
+        text:'A szerverek.txt minden sora név;terhelés formájú. Készíts Szerver osztályt név és terhelés attribútummal, olvasd be a fájlt objektumokba, majd írd a legalább 90%-os szerverek nevét soronként a kritikus.txt fájlba. Végül írd ki a kritikus szerverek darabszámát.', starter:'',
+        checks:[
+          {label:'Szerver osztály',points:2,type:'node',name:'ClassDef',min:1},
+          {label:'__init__ metódus',points:2,type:'function',name:'__init__',minArgs:3},
+          {label:'Fájlmegnyitás open()',points:2,type:'call',name:'open',min:1},
+          {label:'for ciklus',points:2,type:'node',name:'For',min:1}
+        ],
+        fileTests:[
+          {
+            files:{'szerverek.txt':'SRV01;95\nWEB02;72\nDB03;91\n'},
+            readFiles:['kritikus.txt'],
+            expectedFiles:{'kritikus.txt':'SRV01\nDB03\n'},
+            expectedLines:['2'],
+            points:5
+          },
+          {
+            files:{'szerverek.txt':'A;20\nB;90\nC;89\nD;100\n'},
+            readFiles:['kritikus.txt'],
+            expectedFiles:{'kritikus.txt':'B\nD\n'},
+            expectedLines:['2'],
+            points:5
+          }
+        ]
+      }
+    ]
+  },
+  {
+    id:'halado-vizsgaelemek',
+    title:'Részvizsga 4 – Modulok, fájlok és objektumok',
+    description:'A technikusi Python-feladatokhoz fontos haladó elemek külön gyakorlása.',
+    durationMinutes:30,
+    tasks:[
+      {
+        title:'1. feladat – math modul', points:8,
+        text:'Importáld a math modult. Kérj be egy sugarat floatként, és írd ki a kör területét két tizedesre kerekítve. A képlet: pi * r ** 2.', starter:'',
+        checks:[
+          {label:'import használata',points:2,type:'node',name:'Import',min:1},
+          {label:'float() használata',points:1,type:'call',name:'float',min:1}
+        ],
+        tests:[
+          {inputs:['2'],expectedLines:['12.57'],points:2.5},
+          {inputs:['1'],expectedLines:['3.14'],points:2.5}
+        ]
+      },
+      {
+        title:'2. feladat – fájlbeolvasás', points:10,
+        text:'A szamok.txt fájl egész számokat tartalmaz soronként. Olvasd be őket, számold ki az összegüket, és írd ki csak az összeget.', starter:'',
+        checks:[
+          {label:'open() használata',points:2,type:'call',name:'open',min:1},
+          {label:'for ciklus',points:2,type:'node',name:'For',min:1}
+        ],
+        fileTests:[
+          {files:{'szamok.txt':'10\n20\n5\n'},readFiles:[],expectedFiles:{},expectedLines:['35'],points:3},
+          {files:{'szamok.txt':'-2\n7\n'},readFiles:[],expectedFiles:{},expectedLines:['5'],points:3}
+        ]
+      },
+      {
+        title:'3. feladat – saját osztály', points:12,
+        text:'Készíts Gep osztályt nev és ram attribútummal. Az __init__(self, nev, ram) állítsa be ezeket. Hozz létre egy Gep("PC01", 16) példányt, majd írd ki két külön sorba a nevét és RAM-ját.', starter:'',
+        checks:[
+          {label:'Gep osztály',points:3,type:'node',name:'ClassDef',min:1},
+          {label:'__init__ metódus',points:3,type:'function',name:'__init__',minArgs:3}
+        ],
+        tests:[{inputs:[],expectedLines:['PC01','16'],points:6}]
+      }
+    ]
   }
 ];
