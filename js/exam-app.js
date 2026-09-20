@@ -4,6 +4,7 @@ import { ProgressStore, getStoredApiKey } from './storage.js';
 import { PythonRunner } from './python-runner.js';
 import { ActivityTracker } from './activity.js';
 import { checkpointById } from './checkpoints.js';
+import { logStudentExamAttempt } from './firebase-service.js';
 import { GeminiTutor } from './ai.js';
 
 const $ = id => document.getElementById(id);
@@ -138,6 +139,27 @@ async function explainExamTaskWithAi(examId, taskIndex, button) {
   } finally {
     button.disabled = false;
     button.textContent = original;
+  }
+}
+
+function examKindLabel(ex) {
+  if (ex.checkpoint) return 'kisvizsga';
+  if (ex.examMode) return 'vizsgaszimulacio';
+  return 'reszvizsga';
+}
+
+async function logExamSubmission(ex, result) {
+  if (!tracker.classCode || !tracker.uid) return;
+  try {
+    await logStudentExamAttempt(tracker.classCode, tracker.uid, {
+      examId: ex.id,
+      examTitle: ex.title,
+      examKind: examKindLabel(ex),
+      ...result
+    });
+  } catch (err) {
+    // A vizsga pontozását soha ne törje el egy naplózási/RULES hiba.
+    console.warn('A vizsgapróbálkozás Firebase-naplózása nem sikerült:', err);
   }
 }
 
@@ -434,6 +456,15 @@ async function submitExam(ex) {
       });
     }
   }
+  await logExamSubmission(ex, {
+    score: total,
+    maxScore: max,
+    pct,
+    passed: ex.checkpoint ? checkpointPassed : undefined,
+    durationSeconds,
+    taskResults
+  });
+
   store.clearExamSession(ex.id);
   store.clearExamDrafts(ex.id);
   button.textContent = `Eredmény: ${total}/${max} pont`;
