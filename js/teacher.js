@@ -394,6 +394,11 @@ $('lessonTestBtn').onclick = () => {
   localStorage.setItem(TEACHER_TEST_AUTH_KEY, String(Date.now() + TEACHER_TEST_TTL_MS));
   location.href = './?test=1';
 };
+$('examTestBtn').onclick = () => {
+  if (!user) return;
+  localStorage.setItem(TEACHER_TEST_AUTH_KEY, String(Date.now() + TEACHER_TEST_TTL_MS));
+  location.href = './exams.html?teachertest=1';
+};
 $('logoutBtn').onclick = async () => {
   localStorage.removeItem(TEACHER_TEST_AUTH_KEY);
   await signOutFirebase();
