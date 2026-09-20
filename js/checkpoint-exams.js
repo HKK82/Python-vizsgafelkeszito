@@ -380,5 +380,57 @@ export const checkpointExams = [
         solution:'class Szerver:\n    def __init__(self, nev, terheles):\n        self.nev = nev\n        self.terheles = terheles\n\nszerverek = []\nwith open("szerverek.txt", "r", encoding="utf-8") as fajl:\n    for sor in fajl:\n        adatok = sor.strip().split(";")\n        szerverek.append(Szerver(adatok[0], int(adatok[1])))\ndb = 0\nwith open("kritikus.txt", "w", encoding="utf-8") as ki:\n    for szerver in szerverek:\n        if szerver.terheles >= 90:\n            ki.write(szerver.nev + "\\n")\n            db += 1\nprint(db)'
       }
     ]
+  },
+  {
+    id:'checkpoint-9',
+    checkpoint:true,
+    checkpointId:'checkpoint-9',
+    title:'Kisvizsga 9 – Csomagok és kódjavítás',
+    description:'A 29–30. lecke önálló ellenőrzése: csomagból importálás, félkész program kiegészítése és meglévő kód javítása.',
+    durationMinutes:18,
+    passPct:80,
+    minTaskPct:60,
+    tasks:[
+      {
+        title:'1. feladat – Import csomagból', points:10, lessonIds:[29],
+        text:'A html csomagból importáld közvetlenül az escape függvényt. Kérj be egy szöveget, majd írd ki az escape() eredményét.', starter:'',
+        checks:[
+          {label:'from ... import ...',points:3,type:'node',name:'ImportFrom',min:1},
+          {label:'escape()',points:2,type:'call',name:'escape',min:1}
+        ],
+        tests:[
+          {inputs:['A&B'],expectedLines:['A&amp;B'],points:2.5},
+          {inputs:['<SRV01>'],expectedLines:['&lt;SRV01&gt;'],points:2.5}
+        ],
+        solution:'from html import escape\nszoveg = input("Szöveg: ")\nprint(escape(szoveg))'
+      },
+      {
+        title:'2. feladat – Félkész program befejezése', points:10, lessonIds:[30],
+        text:'Egészítsd ki a meglévő programot úgy, hogy a bekért teljes és hibás gépszámból a működő gépek számát írja ki.', starter:'osszes = int(input("Összes: "))\nhibas = int(input("Hibás: "))\n# Fejezd be a programot innen:\n',
+        checks:[
+          {label:'kivonás',points:2,type:'op',name:'Sub',min:1},
+          {label:'print()',points:2,type:'call',name:'print',min:1}
+        ],
+        tests:[
+          {inputs:['30','4'],expectedLines:['26'],points:3},
+          {inputs:['12','0'],expectedLines:['12'],points:3}
+        ],
+        solution:'osszes = int(input("Összes: "))\nhibas = int(input("Hibás: "))\nprint(osszes - hibas)'
+      },
+      {
+        title:'3. feladat – Logikai hiba javítása', points:10, lessonIds:[30],
+        text:'A megadott cpu_statusz() függvény a 70-es és 90-es határértéket hibásan kezeli. Javítsd ki a meglévő kódot úgy, hogy 90-től KRITIKUS, 70-től FIGYELMEZTETÉS, különben OK értéket adjon vissza.', starter:'def cpu_statusz(cpu):\n    if cpu > 90:\n        return "KRITIKUS"\n    elif cpu > 70:\n        return "FIGYELMEZTETÉS"\n    return "OK"\n',
+        checks:[
+          {label:'cpu_statusz()',points:2,type:'function',name:'cpu_statusz',minArgs:1},
+          {label:'if feltétel',points:2,type:'node',name:'If',min:1}
+        ],
+        functionTests:[
+          {functionName:'cpu_statusz',args:[90],expected:'KRITIKUS',points:2},
+          {functionName:'cpu_statusz',args:[70],expected:'FIGYELMEZTETÉS',points:2},
+          {functionName:'cpu_statusz',args:[20],expected:'OK',points:2}
+        ],
+        solution:'def cpu_statusz(cpu):\n    if cpu >= 90:\n        return "KRITIKUS"\n    elif cpu >= 70:\n        return "FIGYELMEZTETÉS"\n    return "OK"'
+      }
+    ]
   }
 ];
