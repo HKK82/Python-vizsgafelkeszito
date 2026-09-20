@@ -148,8 +148,8 @@ h3 { font-size: 14px; color: #c9d7ee; margin: 0 0 6px; }
   top:74px;
   z-index:7;
   display:grid;
-  grid-template-columns:auto minmax(220px,1fr) auto;
-  gap:9px;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:8px 10px;
   align-items:center;
   margin:4px 0 14px;
   padding:10px 12px;
@@ -160,14 +160,18 @@ h3 { font-size: 14px; color: #c9d7ee; margin: 0 0 6px; }
   backdrop-filter:blur(10px);
 }
 .lessonNavigator label{
+  grid-column:1 / -1;
   color:var(--muted);
   font-size:12px;
   font-weight:800;
 }
 .lessonNavigator select{
+  display:block;
   width:100%;
-  min-width:0;
-  padding:9px 34px 9px 10px;
+  min-width:220px;
+  max-width:100%;
+  box-sizing:border-box;
+  padding:9px 36px 9px 11px;
   border-radius:9px;
   border:1px solid #354b70;
   background:#081220;
@@ -179,10 +183,13 @@ h3 { font-size: 14px; color: #c9d7ee; margin: 0 0 6px; }
   border-color:#6998e8;
   box-shadow:0 0 0 3px rgba(105,152,232,.12);
 }
+.lessonNavigator option{background:#081220;color:#eef4ff}
 .lessonNavigator option:disabled{color:#71809b}
-@media(max-width:760px){
+@media(max-width:900px){
   .lessonNavigator{grid-template-columns:1fr}
   .lessonNavigator label{margin-bottom:-3px}
+  .lessonNavigator select{min-width:0}
+  .lessonNavigator #lessonStartBtn{width:100%}
 }
 
 /* v5.2: háromlépcsős gyakorlás */
