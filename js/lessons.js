@@ -1115,6 +1115,101 @@ szerverek.append(objektum)</code></pre>
         solution: 'class Szerver:\n    def __init__(self, nev, terheles):\n        self.nev = nev\n        self.terheles = terheles\n\nszerverek = []\nwith open("szerverek.txt", "r", encoding="utf-8") as fajl:\n    for sor in fajl:\n        adatok = sor.strip().split(";")\n        szerverek.append(Szerver(adatok[0], int(adatok[1])))\ndb = 0\nwith open("kritikus.txt", "w", encoding="utf-8") as ki:\n    for szerver in szerverek:\n        if szerver.terheles >= 90:\n            ki.write(szerver.nev + "\\n")\n            db += 1\nprint(db)'
       }
     ]
+  },
+  {
+    id: 29,
+    title: 'Csomagok – modulok rendszerezése',
+    objective: 'Értsd a csomag fogalmát, és tudj csomagból modult vagy függvényt importálni.',
+    explain: `
+      <p>A <strong>modul</strong> általában egy Python-fájl, a <strong>csomag</strong> pedig több összetartozó modult rendez közös névtérbe. Így egy nagyobb program részei áttekinthetően szervezhetők.</p>
+      <p>A gyakorlókörnyezetben biztonságos példaként a Python beépített <code>html</code> csomagját használjuk.</p>
+      <pre><code>import html
+print(html.escape("&lt;szerver&gt;"))</code></pre>
+      <p>Másik forma, amikor közvetlenül egy nevet importálunk a csomagból:</p>
+      <pre><code>from html import escape
+print(escape("A&amp;B"))</code></pre>`,
+    tasks: [
+      {
+        text: 'Importáld a <code>html</code> csomagot, majd a <code>html.escape()</code> segítségével írd ki biztonságosan ezt a szöveget: <code>&lt;szerver&gt;</code>.',
+        starter: '',
+        checks: [{ type:'node', name:'Import', min:1 }, { type:'call', name:'escape', min:1 }],
+        tests: [{ inputs:[], expectedLines:['&lt;szerver&gt;'] }],
+        hints: ['Először <code>import html</code>.', 'Utána hívd meg a <code>html.escape(...)</code> függvényt.'],
+        solution: 'import html\nprint(html.escape("<szerver>"))'
+      },
+      {
+        text: 'Használd a <code>from html import escape</code> importformát. Kérj be egy szöveget, majd írd ki az <code>escape()</code> eredményét.',
+        starter: '',
+        checks: [{ type:'node', name:'ImportFrom', min:1 }, { type:'call', name:'escape', min:1 }, { type:'call', name:'input', min:1 }],
+        tests: [
+          { inputs:['A&B'], expectedLines:['A&amp;B'] },
+          { inputs:['<PC01>'], expectedLines:['&lt;PC01&gt;'] }
+        ],
+        hints: ['A fejléc: <code>from html import escape</code>.', 'A bekért szöveget add át az <code>escape()</code>-nek.'],
+        solution: 'from html import escape\nszoveg = input("Szöveg: ")\nprint(escape(szoveg))'
+      },
+      {
+        text: 'Önállóan: importáld az <code>escape</code> függvényt a <code>html</code> csomagból <code>vedett</code> álnéven. Kérj be egy szöveget, és a <code>vedett()</code> segítségével írd ki az átalakított változatát.',
+        starter: '',
+        checks: [{ type:'node', name:'ImportFrom', min:1 }, { type:'call', name:'vedett', min:1 }, { type:'call', name:'input', min:1 }],
+        tests: [
+          { inputs:['<DB03>'], expectedLines:['&lt;DB03&gt;'] },
+          { inputs:['R&D'], expectedLines:['R&amp;D'] }
+        ],
+        hints: ['Importnál az <code>as</code> kulcsszóval adhatsz álnevet.', 'Ezután már az új nevet kell függvényként meghívni.'],
+        solution: 'from html import escape as vedett\nszoveg = input("Szöveg: ")\nprint(vedett(szoveg))'
+      }
+    ]
+  },
+  {
+    id: 30,
+    title: 'Meglévő kód kiegészítése és hibajavítása',
+    objective: 'Tudj félkész vagy hibás Python-programot megérteni, kijavítani és befejezni.',
+    explain: `
+      <p>Vizsgán nem mindig üres szerkesztőből indulsz: kaphatsz meglévő programot, amelyből hiányzik egy rész, vagy hibát kell benne javítani.</p>
+      <p>Ilyenkor először olvasd végig a kódot, azonosítsd a bemenetet, a feldolgozást és a kívánt kimenetet. Ezután csak azt a részt változtasd meg, amely tényleg hibás vagy hiányzik.</p>
+      <pre><code># Félkész program
+a = int(input("A: "))
+b = int(input("B: "))
+# Ide hiányzik az eredmény kiírása</code></pre>
+      <p>A hibajavításnál különösen figyelj a változónevekre, határértékekre (<code>&gt;</code> vagy <code>&gt;=</code>), behúzásra és a <code>return</code> helyére.</p>`,
+    tasks: [
+      {
+        text: 'Egészítsd ki a megadott félkész programot úgy, hogy a két bekért egész szám összegét írja ki. A meglévő két bekérést használd fel.',
+        starter: 'a = int(input("A: "))\nb = int(input("B: "))\n# Egészítsd ki innen:\n',
+        checks: [{ type:'call', name:'int', min:2 }, { type:'op', name:'Add', min:1 }, { type:'call', name:'print', min:1 }],
+        tests: [
+          { inputs:['12','8'], expectedLines:['20'] },
+          { inputs:['-3','10'], expectedLines:['7'] }
+        ],
+        hints: ['A két érték már az <code>a</code> és <code>b</code> változóban van.', 'Csak az összeg kiszámítása és kiírása hiányzik.'],
+        solution: 'a = int(input("A: "))\nb = int(input("B: "))\nprint(a + b)'
+      },
+      {
+        text: 'Javítsd ki a meglévő program hibáját. A cél: 90-től legyen <code>KRITIKUS</code>, egyébként <code>OK</code>. A jelenlegi program a 90-es határértéket rosszul kezeli.',
+        starter: 'cpu = int(input("CPU: "))\nif cpu > 90:\n    print("KRITIKUS")\nelse:\n    print("OK")\n',
+        checks: [{ type:'node', name:'If', min:1 }],
+        tests: [
+          { inputs:['90'], expectedLines:['KRITIKUS'] },
+          { inputs:['95'], expectedLines:['KRITIKUS'] },
+          { inputs:['89'], expectedLines:['OK'] }
+        ],
+        hints: ['A hiba a feltétel határértékénél van.', 'A „90-től” azt jelenti, hogy a 90 is beletartozik.'],
+        solution: 'cpu = int(input("CPU: "))\nif cpu >= 90:\n    print("KRITIKUS")\nelse:\n    print("OK")'
+      },
+      {
+        text: 'Önálló hibajavítás: a megadott <code>kritikus_db()</code> függvénynek azt kell visszaadnia, hány érték legalább 90. A kód fut, de hibás eredményt ad a határértéknél. Javítsd ki úgy, hogy minden rejtett teszten helyes legyen.',
+        starter: 'def kritikus_db(ertekek):\n    db = 0\n    for ertek in ertekek:\n        if ertek > 90:\n            db += 1\n    return db\n',
+        checks: [{ type:'function', name:'kritikus_db', minArgs:1 }, { type:'node', name:'For', min:1 }, { type:'node', name:'If', min:1 }, { type:'node', name:'Return', min:1 }],
+        functionTests: [
+          { functionName:'kritikus_db', args:[[95,70,91,20]], expected:2 },
+          { functionName:'kritikus_db', args:[[90,89,100,90]], expected:3 },
+          { functionName:'kritikus_db', args:[[]], expected:0 }
+        ],
+        hints: ['A függvény szerkezete jó, a feltételt vizsgáld meg.', 'A „legalább 90” a 90-et is tartalmazza.'],
+        solution: 'def kritikus_db(ertekek):\n    db = 0\n    for ertek in ertekek:\n        if ertek >= 90:\n            db += 1\n    return db'
+      }
+    ]
   }
 ];
 
