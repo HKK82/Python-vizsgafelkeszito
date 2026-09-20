@@ -279,3 +279,15 @@ h3 { font-size: 14px; color: #c9d7ee; margin: 0 0 6px; }
   border-color:#7a3341;
   color:#ffd8df;
 }
+
+.examLogTable{min-width:1050px}
+.examLogPass,.examLogFail{
+  display:inline-flex;
+  padding:4px 8px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:850;
+  white-space:nowrap;
+}
+.examLogPass{background:#173f30;color:#bff2d6;border:1px solid #2e6b50}
+.examLogFail{background:#4a202a;color:#ffd7de;border:1px solid #713442}
