@@ -28,6 +28,14 @@
       </div>
       <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
       <div class="teacherControls"><div><label>Meglévő órakód</label><input id="classCode" placeholder="PY-ABCDE"></div><button id="openClassBtn" class="secondary">Megnyitás</button><button id="copyCodeBtn" class="ghost">Kód másolása</button></div>
+      <div class="teacherHistoryBox">
+        <div>
+          <label for="teacherHistory">Korábbi órák a felhőből</label>
+          <select id="teacherHistory"><option value="">Betöltés…</option></select>
+          <div id="teacherHistoryInfo" class="tiny">A lista nem a böngésző sütijeiben, hanem Firebase-ben tárolódik.</div>
+        </div>
+        <button id="openHistoryBtn" class="secondary" disabled>Korábbi óra megnyitása</button>
+      </div>
     </section>
     <section id="sessionCard" class="card simpleCard hidden"><div class="teacherHero"><div><div class="tiny">Aktuális órakód</div><div id="classCodeBig" class="classCodeBig">–</div><div id="sessionTitle" class="muted"></div></div><div class="buttonRow"><button id="toggleClassBtn" class="danger">Óra lezárása</button><button id="csvBtn" class="secondary">⬇ Aktivitás CSV</button><button id="examCsvBtn" class="secondary">⬇ Vizsganapló CSV</button></div></div></section>
     <section class="statTiles" id="stats"></section>
