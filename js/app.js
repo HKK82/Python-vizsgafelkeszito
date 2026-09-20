@@ -158,6 +158,36 @@ function isLessonUnlocked(lessonIndex) {
   return indices.some(i => i <= frontier || store.isCompleted(items[i].key));
 }
 
+function firstLessonIndex(lessonIndex) {
+  return lessonTaskIndices(lessonIndex)[0] ?? 0;
+}
+
+function lessonChoiceTarget(lessonIndex) {
+  const indices = lessonTaskIndices(lessonIndex);
+  const frontier = store.getFrontier(totalTasks);
+  const firstIncomplete = indices.find(i => !store.isCompleted(items[i].key) && i <= frontier);
+  return firstIncomplete ?? indices[0] ?? 0;
+}
+
+function renderLessonNavigator() {
+  const select = $('lessonSelect');
+  if (!select) return;
+  const activeLessonIndex = currentItem()?.lessonIndex ?? 0;
+  select.innerHTML = '';
+  lessons.forEach((lesson, lessonIndex) => {
+    const done = isLessonDone(lessonIndex);
+    const unlocked = isLessonUnlocked(lessonIndex);
+    const option = document.createElement('option');
+    option.value = String(lessonIndex);
+    option.disabled = !unlocked;
+    const marker = !unlocked ? '🔒' : done ? '✓' : lessonIndex === activeLessonIndex ? '●' : '○';
+    option.textContent = `${marker} ${lesson.id}. ${lesson.title}`;
+    option.selected = lessonIndex === activeLessonIndex;
+    select.appendChild(option);
+  });
+  $('lessonStartBtn').disabled = currentIndex === firstLessonIndex(activeLessonIndex);
+}
+
 function updateCloudStatus(status = {}) {
   const el = $('cloudStatus');
   if (!el) return;
@@ -199,9 +229,7 @@ function renderSidebar() {
     row.innerHTML = `<span class="lessonNum">${done ? '✓' : lesson.id}</span><span>${escapeHtml(lesson.title)}</span>`;
     row.onclick = () => {
       if (!unlocked) return;
-      const indices = lessonTaskIndices(lessonIndex);
-      const firstIncomplete = indices.find(i => !store.isCompleted(items[i].key) && i <= store.getFrontier(totalTasks));
-      navigateTo(firstIncomplete ?? indices[0]);
+      navigateTo(lessonChoiceTarget(lessonIndex));
     };
     list.appendChild(row);
   });
@@ -210,6 +238,7 @@ function renderSidebar() {
 function renderTask() {
   const { lesson, task, key, taskIndex } = currentItem();
   renderSidebar();
+  renderLessonNavigator();
   $('lessonBadge').textContent = `${lesson.id}. lecke`;
   $('lessonTitle').textContent = lesson.title;
   $('lessonObjective').textContent = lesson.objective;
@@ -251,6 +280,8 @@ function navigateTo(index) {
   const frontier = store.getFrontier(totalTasks);
   const safeIndex = Math.max(0, Math.min(index, items.length - 1));
   if (safeIndex > frontier && !store.isCompleted(items[safeIndex].key)) return;
+  const current = currentItem();
+  if (current && $('codeEditor')) store.saveDraft(current.key, $('codeEditor').value);
   currentIndex = safeIndex;
   tracker.record('activity');
   renderTask();
@@ -527,9 +558,10 @@ function showSolution() {
 
 function saveDraftSoon() {
   clearTimeout(draftTimer);
+  const { key } = currentItem();
+  const code = $('codeEditor').value;
   draftTimer = setTimeout(() => {
-    const { key } = currentItem();
-    store.saveDraft(key, $('codeEditor').value);
+    store.saveDraft(key, code);
   }, 250);
 }
 
@@ -715,6 +747,18 @@ function bootUi() {
   $('solutionBtn').onclick = showSolution;
   $('nextBtn').onclick = nextTask;
   $('prevBtn').onclick = previousTask;
+  $('lessonStartBtn').onclick = () => {
+    const lessonIndex = currentItem()?.lessonIndex ?? 0;
+    navigateTo(firstLessonIndex(lessonIndex));
+  };
+  $('lessonSelect').onchange = event => {
+    const lessonIndex = Number(event.target.value);
+    if (!Number.isInteger(lessonIndex) || !isLessonUnlocked(lessonIndex)) {
+      renderLessonNavigator();
+      return;
+    }
+    navigateTo(lessonChoiceTarget(lessonIndex));
+  };
   $('aiExplainBtn').onclick = () => askAi('Magyarázd el másképp az aktuális új Python-fogalmat, nagyon egyszerű példával. Az aktuális feladat kész megoldását ne add meg, ha még nem engedélyezett.', 'aiQuestions');
   $('aiHintBtn').onclick = () => askAi('Adj egy rövid, célzott rávezető tippet az aktuális feladathoz. Ne ugorj előre a tananyagban.', 'aiHints');
   $('sendBtn').onclick = () => {
