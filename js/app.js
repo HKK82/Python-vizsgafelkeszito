@@ -4,6 +4,7 @@ import { PythonRunner } from './python-runner.js';
 import { GeminiTutor } from './ai.js';
 import { ActivityTracker } from './activity.js';
 import { cloudConfigured } from './firebase-service.js';
+import { checkpointAfterLesson, checkpointRequiredBeforeLesson } from './checkpoints.js';
 
 const items = flattenTasks();
 const store = new ProgressStore();
@@ -226,10 +227,35 @@ function isLessonDone(lessonIndex) {
   return lessonTaskIndices(lessonIndex).every(i => store.isCompleted(items[i].key));
 }
 
+function checkpointAllowsLesson(lessonId) {
+  const required = checkpointRequiredBeforeLesson(lessonId);
+  return !required || store.isCheckpointPassed(required.id);
+}
+
 function isLessonUnlocked(lessonIndex) {
   const indices = lessonTaskIndices(lessonIndex);
   const frontier = store.getFrontier(totalTasks);
-  return indices.some(i => i <= frontier || store.isCompleted(items[i].key));
+  const done = isLessonDone(lessonIndex);
+  const baseUnlocked = indices.some(i => i <= frontier || store.isCompleted(items[i].key));
+  return done || (baseUnlocked && checkpointAllowsLesson(lessons[lessonIndex].id));
+}
+
+function isLastTaskOfLesson(item = currentItem()) {
+  return !!item && item.taskIndex === item.lesson.tasks.length - 1;
+}
+
+function pendingCheckpointAfterCurrentLesson() {
+  const item = currentItem();
+  if (!item || !isLastTaskOfLesson(item)) return null;
+  const cp = checkpointAfterLesson(item.lesson.id);
+  return cp && !store.isCheckpointPassed(cp.id) ? cp : null;
+}
+
+function goToCheckpoint(cp) {
+  if (!cp) return;
+  const current = currentItem();
+  if (current && $('codeEditor')) store.saveDraft(current.key, $('codeEditor').value);
+  window.location.href = `./exams.html?checkpoint=${encodeURIComponent(cp.id)}`;
 }
 
 function firstLessonIndex(lessonIndex) {
@@ -341,9 +367,20 @@ function renderTask() {
   $('solutionCode').textContent = task.solution || '';
 
   const completed = store.isCompleted(key);
+  const reviewTask = practiceStage(taskIndex).independent && store.isReviewTask(key);
+  if (reviewTask) {
+    const streak = store.getMasteryStreak(key);
+    $('practiceStageBadge').textContent = 'ÚJRAGYAKORLÁS';
+    $('practiceStageTitle').textContent = 'Célzott gyakorlás – puska nélkül';
+    $('practiceStageText').textContent = `Ezt a készséget a kisvizsga még bizonytalannak mutatta. Két egymást követő önálló siker kell. Jelenlegi sorozat: ${streak}/2.`;
+  }
+
   $('completedBadge').classList.toggle('hidden', !completed);
   $('nextBtn').classList.toggle('hidden', !completed);
-  $('nextBtn').textContent = currentIndex >= items.length - 1 ? 'Alapmodul kész ✓' : 'Következő feladat →';
+  const pendingCheckpoint = pendingCheckpointAfterCurrentLesson();
+  $('nextBtn').textContent = pendingCheckpoint
+    ? `Kisvizsga következik →`
+    : (currentIndex >= items.length - 1 ? 'Alapmodul kész ✓' : 'Következő feladat →');
   $('prevBtn').disabled = currentIndex === 0;
 
   $('messages').innerHTML = '';
@@ -360,7 +397,9 @@ function renderTask() {
 function navigateTo(index) {
   const frontier = store.getFrontier(totalTasks);
   const safeIndex = Math.max(0, Math.min(index, items.length - 1));
-  if (safeIndex > frontier && !store.isCompleted(items[safeIndex].key)) return;
+  const target = items[safeIndex];
+  if (safeIndex > frontier && !store.isCompleted(target.key)) return;
+  if (!store.isCompleted(target.key) && !checkpointAllowsLesson(target.lesson.id)) return;
   const current = currentItem();
   if (current && $('codeEditor')) store.saveDraft(current.key, $('codeEditor').value);
   currentIndex = safeIndex;
@@ -369,8 +408,13 @@ function navigateTo(index) {
 }
 
 function nextTask() {
+  const cp = pendingCheckpointAfterCurrentLesson();
+  if (cp) {
+    goToCheckpoint(cp);
+    return;
+  }
   if (currentIndex >= items.length - 1) {
-    showFeedback('ok', '<strong>🎉 Az alapozó modul elkészült.</strong><br>A következő modulban jönnek az algoritmusok, fájlkezelés, osztályok és vizsgaszimulációk.');
+    showFeedback('ok', '<strong>🎉 Az alapozó modul elkészült.</strong><br>Az öt kisvizsga és az alapozó leckék teljesítve vannak.');
     return;
   }
   navigateTo(currentIndex + 1);
@@ -519,8 +563,11 @@ function autoExplainFailure(source, diagnostic) {
 }
 
 function failedAttempt(message, diagnostic = '') {
-  const { key } = currentItem();
+  const { key, taskIndex } = currentItem();
   const attempts = store.incrementAttempt(key);
+  if (practiceStage(taskIndex).independent && store.isReviewTask(key)) {
+    store.resetMasteryStreak(key);
+  }
   $('attemptText').textContent = `${attempts} sikertelen ellenőrzés`;
   $('solutionBtn').disabled = attempts < 3;
   lastDiagnostic = diagnostic || message;
@@ -532,7 +579,7 @@ function failedAttempt(message, diagnostic = '') {
 async function checkTask() {
   if (busy || !pythonReady) return;
   tracker.record('checkCount');
-  const { task, key } = currentItem();
+  const { task, key, taskIndex } = currentItem();
   const code = $('codeEditor').value;
   store.saveDraft(key, code);
   if (!code.trim()) {
@@ -582,8 +629,27 @@ async function checkTask() {
       }
     }
 
+    const masteryReview = practiceStage(taskIndex).independent && store.isReviewTask(key);
+    if (masteryReview) {
+      const streak = store.recordMasterySuccess(key);
+      tracker.record('successfulChecks');
+      store.resetAttempt(key);
+      lastDiagnostic = '';
+      if (streak < 2) {
+        $('attemptText').textContent = '1/2 önálló siker ✓';
+        $('output').textContent = '✓ Első önálló siker.';
+        $('codeEditor').value = '';
+        store.saveDraft(key, '');
+        showFeedback('ok', '<strong>✓ Első önálló siker megvan.</strong><br>Most oldd meg még egyszer nulláról, puska nélkül. Csak két egymást követő siker után számít stabilnak a tudás.');
+        addTeacherMessage('🎯 Ez már jó volt. Most még egyszer, teljesen nulláról. Ha a következő is sikerül, mehetsz vissza a kisvizsgára.');
+        renderSidebar();
+        tracker.flush().catch(() => {});
+        return;
+      }
+    }
+
     store.markCompleted(key, currentIndex, totalTasks);
-    tracker.record('successfulChecks');
+    if (!masteryReview) tracker.record('successfulChecks');
     store.resetAttempt(key);
     lastDiagnostic = '';
     $('attemptText').textContent = 'Sikeres ✓';
@@ -593,7 +659,9 @@ async function checkTask() {
     $('nextBtn').classList.remove('hidden');
     renderSidebar();
     const usedSolution = store.hasViewedSolution(key);
-    showFeedback('ok', `<strong>✓ Helyes megoldás.</strong><br>${usedSolution ? 'A mintát már láttad, ezért a következő feladatnál próbáld teljesen önállóan.' : 'Működő kóddal bizonyítottad, hogy ezt a lépést érted.'}`);
+    showFeedback('ok', masteryReview
+      ? '<strong>✓ 2/2 egymást követő önálló siker.</strong><br>Ez a készség most újra stabil. Ha minden kijelölt gyenge területet teljesítettél, a kisvizsga újrapróbálható.'
+      : `<strong>✓ Helyes megoldás.</strong><br>${usedSolution ? 'A mintát már láttad, ezért a következő feladatnál próbáld teljesen önállóan.' : 'Működő kóddal bizonyítottad, hogy ezt a lépést érted.'}`);
     addTeacherMessage(usedSolution ? 'Sikerült. A következő feladat hasonló gondolkodást kér, de próbáld a mintamegoldás nélkül felépíteni.' : 'Nagyon jó. Nem csak azt mondtad, hogy érted: a programtesztek szerint működik a megoldásod. Mehetünk tovább.');
     addTeacherMessage(`✅ ${successCoachText(currentItem().lesson.id)}`);
     tracker.flush().catch(() => {});
@@ -779,6 +847,14 @@ async function begin(useAi) {
   const frontier = store.getFrontier(totalTasks);
   const last = store.getLastViewed();
   currentIndex = Math.min(last, frontier >= totalTasks ? totalTasks - 1 : frontier);
+
+  // Régebbi profilnál se lehessen egy újonnan bevezetett kisvizsgát átugrani.
+  const currentLessonId = items[currentIndex]?.lesson?.id || 1;
+  const blocking = checkpointRequiredBeforeLesson(currentLessonId);
+  if (blocking && !store.isCheckpointPassed(blocking.id)) {
+    const indices = items.map((x, i) => x.lesson.id === blocking.afterLesson ? i : -1).filter(i => i >= 0);
+    if (indices.length) currentIndex = indices[indices.length - 1];
+  }
   renderTask();
   tracker.flush().catch(() => {});
 }
