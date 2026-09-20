@@ -16,6 +16,11 @@ const reviewTutor = new GeminiTutor({ getApiKey: () => getStoredApiKey(), cooldo
 const reviewContexts = new Map();
 let ready = false;
 const CLASS_CODE_KEY = 'python_exam_trainer_class_code_v3';
+const TEACHER_TEST_AUTH_KEY = 'python_teacher_test_authorized_until_v1';
+const TEACHER_EXAM_TEST_PROFILE = '🧪 Oktatói vizsgateszt';
+const teacherTestRequested = new URLSearchParams(location.search).get('teachertest') === '1';
+const teacherTestAuthorizedUntil = Number(localStorage.getItem(TEACHER_TEST_AUTH_KEY) || 0);
+const TEACHER_EXAM_TEST_MODE = teacherTestRequested && teacherTestAuthorizedUntil > Date.now();
 
 function progressPct() {
   if (!totalTasks) return 0;
@@ -149,6 +154,7 @@ function examKindLabel(ex) {
 }
 
 async function logExamSubmission(ex, result) {
+  if (TEACHER_EXAM_TEST_MODE) return;
   if (!tracker.classCode || !tracker.uid) return;
   try {
     await logStudentExamAttempt(tracker.classCode, tracker.uid, {
@@ -169,6 +175,7 @@ function activeSession(examId) {
 }
 
 function checkpointReadiness(ex) {
+  if (TEACHER_EXAM_TEST_MODE) return { allowed: true, reason: '' };
   if (!ex.checkpoint) return { allowed: true, reason: '' };
   const cp = checkpointById(ex.checkpointId || ex.id);
   if (!cp) return { allowed: true, reason: '' };
@@ -196,6 +203,7 @@ function checkpointReadiness(ex) {
 }
 
 function checkpointStateLabel(ex) {
+  if (TEACHER_EXAM_TEST_MODE) return '<span class="examModeTag">OKTATÓI TESZT</span>';
   if (!ex.checkpoint) return '';
   const state = store.getCheckpoint(ex.checkpointId || ex.id);
   if (state?.passed) return '<span class="badge done">✓ TELJESÍTVE</span>';
@@ -221,10 +229,61 @@ function reviewLessonIdsFromResults(ex, taskResults) {
   return [...new Set(weakIndexes.flatMap(i => ex.tasks[i]?.lessonIds || []))];
 }
 
+function renderTeacherExamTestPanel() {
+  const panel = $('teacherExamTestPanel');
+  if (!panel) return;
+  panel.classList.toggle('hidden', !TEACHER_EXAM_TEST_MODE);
+  if (!TEACHER_EXAM_TEST_MODE) return;
+
+  const examSelect = $('teacherExamSelect');
+  const taskSelect = $('teacherExamTaskSelect');
+  examSelect.innerHTML = exams.map(ex =>
+    `<option value="${esc(ex.id)}">${esc(ex.title)}</option>`
+  ).join('');
+
+  const refreshTasks = () => {
+    const ex = exams.find(x => x.id === examSelect.value) || exams[0];
+    taskSelect.innerHTML = ex.tasks.map((task, i) =>
+      `<option value="${i}">${i + 1}. feladat – ${esc(task.title.replace(/^\d+\.\s*feladat\s*[–-]\s*/i, ''))}</option>`
+    ).join('');
+  };
+
+  refreshTasks();
+  examSelect.onchange = refreshTasks;
+
+  $('teacherExamJumpBtn').onclick = () => {
+    const ex = exams.find(x => x.id === examSelect.value);
+    if (!ex) return;
+    startExam(ex.id);
+    const taskIndex = Number(taskSelect.value) || 0;
+    requestAnimationFrame(() => {
+      document.querySelector(`[data-code="${ex.id}-${taskIndex}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  };
+
+  $('teacherExamResetBtn').onclick = () => {
+    const ex = exams.find(x => x.id === examSelect.value);
+    if (!ex) return;
+    store.clearExamSession(ex.id);
+    store.clearExamDrafts(ex.id);
+    const body = document.querySelector(`[data-body="${ex.id}"]`);
+    if (body) {
+      body.innerHTML = '';
+      body.classList.add('hidden');
+      body.classList.remove('submitted');
+    }
+    startExam(ex.id);
+    const taskIndex = Number(taskSelect.value) || 0;
+    requestAnimationFrame(() => {
+      document.querySelector(`[data-code="${ex.id}-${taskIndex}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  };
+}
+
 function render() {
   const p = store.getCurrentProfile();
   $('examList').innerHTML = exams.map(ex => {
-    const last = store.getExamResults(ex.id).slice(-1)[0];
+    const last = TEACHER_EXAM_TEST_MODE ? null : store.getExamResults(ex.id).slice(-1)[0];
     const active = activeSession(ex.id);
     const readiness = checkpointReadiness(ex);
     const disabled = !p || !readiness.allowed;
@@ -242,6 +301,7 @@ function render() {
   document.querySelectorAll('[data-start]').forEach(b => b.onclick = () => {
     if (!b.disabled) startExam(b.dataset.start);
   });
+  renderTeacherExamTestPanel();
 }
 
 function setupExamEditor(textarea, examId, taskIndex) {
@@ -427,15 +487,17 @@ async function submitExam(ex) {
   );
   const checkpointPassed = !!ex.checkpoint && pct >= Number(ex.passPct ?? 80) && allTasksStrongEnough;
 
-  store.saveExamResult(ex.id, {
-    score: total,
-    maxScore: max,
-    taskResults,
-    durationSeconds,
-    passed: ex.checkpoint ? checkpointPassed : undefined
-  });
+  if (!TEACHER_EXAM_TEST_MODE) {
+    store.saveExamResult(ex.id, {
+      score: total,
+      maxScore: max,
+      taskResults,
+      durationSeconds,
+      passed: ex.checkpoint ? checkpointPassed : undefined
+    });
+  }
 
-  if (ex.checkpoint) {
+  if (ex.checkpoint && !TEACHER_EXAM_TEST_MODE) {
     if (checkpointPassed) {
       store.saveCheckpointOutcome(ex.checkpointId || ex.id, {
         passed: true,
@@ -471,8 +533,10 @@ async function submitExam(ex) {
   store.clearExamSession(ex.id);
   store.clearExamDrafts(ex.id);
   button.textContent = `Eredmény: ${total}/${max} pont`;
-  tracker.record('successfulChecks');
-  tracker.flush().catch(() => {});
+  if (!TEACHER_EXAM_TEST_MODE) {
+    tracker.record('successfulChecks');
+    tracker.flush().catch(() => {});
+  }
   renderAfterSubmit(ex, total, max, taskResults);
 }
 
@@ -480,6 +544,13 @@ function renderAfterSubmit(ex, total, max, taskResults) {
   const card = document.querySelector(`[data-exam="${ex.id}"]`);
   const h = document.createElement('div');
   const pct = max ? Math.round(total / max * 100) : 0;
+
+  if (TEACHER_EXAM_TEST_MODE) {
+    h.className = 'feedback info';
+    h.innerHTML = `<strong>🧪 Oktatói teszt eredménye: ${total}/${max} pont (${pct}%).</strong><br>Ez a próba nem módosított tanulói haladást, kisvizsga-feloldást vagy Firebase vizsganaplót.`;
+    card.appendChild(h);
+    return;
+  }
 
   if (!ex.checkpoint) {
     h.className = 'feedback ok';
@@ -507,7 +578,23 @@ function renderAfterSubmit(ex, total, max, taskResults) {
 }
 
 async function boot() {
+  if (teacherTestRequested && !TEACHER_EXAM_TEST_MODE) {
+    alert('Az oktatói vizsgatesztet a tanári oldalról kell megnyitni Google-belépés után.');
+    location.href = './teacher.html';
+    return;
+  }
+
+  if (TEACHER_EXAM_TEST_MODE) {
+    store.setCurrentStudent(TEACHER_EXAM_TEST_PROFILE);
+    const p = store.getCurrentProfile();
+    if (p) {
+      p.isTestProfile = true;
+      store.persist();
+    }
+  }
+
   render();
+
   runner.onStatus = s => {
     ready = s === 'ready';
     $('runtimeStatus').textContent = ready ? 'Python kész ✓' : s === 'loading' ? 'Python betöltése…' : 'Python újraindítása…';
@@ -515,24 +602,26 @@ async function boot() {
   };
   await runner.start();
 
-  const p = store.getCurrentProfile();
-  const code = sessionStorage.getItem(CLASS_CODE_KEY) || '';
-  if (p && code) {
-    try { await tracker.join(code, p.displayName); tracker.flush().catch(() => {}); } catch {}
-  }
+  if (!TEACHER_EXAM_TEST_MODE) {
+    const p = store.getCurrentProfile();
+    const code = sessionStorage.getItem(CLASS_CODE_KEY) || '';
+    if (p && code) {
+      try { await tracker.join(code, p.displayName); tracker.flush().catch(() => {}); } catch {}
+    }
 
-  const active = exams.find(ex => activeSession(ex.id));
-  if (active) {
-    startExam(active.id);
-    return;
-  }
+    const active = exams.find(ex => activeSession(ex.id));
+    if (active) {
+      startExam(active.id);
+      return;
+    }
 
-  const requested = new URLSearchParams(location.search).get('checkpoint');
-  if (requested) {
-    const ex = exams.find(x => x.id === requested && x.checkpoint);
-    const card = ex ? document.querySelector(`[data-exam="${ex.id}"]`) : null;
-    card?.scrollIntoView({ block: 'start', behavior: 'smooth' });
-    if (ex && checkpointReadiness(ex).allowed) startExam(ex.id);
+    const requested = new URLSearchParams(location.search).get('checkpoint');
+    if (requested) {
+      const ex = exams.find(x => x.id === requested && x.checkpoint);
+      const card = ex ? document.querySelector(`[data-exam="${ex.id}"]`) : null;
+      card?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      if (ex && checkpointReadiness(ex).allowed) startExam(ex.id);
+    }
   }
 }
 
