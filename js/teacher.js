@@ -9,7 +9,9 @@ import {
   normalizeClassCode,
   getClassMeta,
   subscribeStudents,
-  subscribeClassMeta
+  subscribeClassMeta,
+  rememberTeacherClassSession,
+  listTeacherClassSessions
 } from './firebase-service.js';
 
 const $ = id => document.getElementById(id);
@@ -195,6 +197,34 @@ function renderMeta() {
   $('toggleClassBtn').className = meta.open ? 'danger' : 'success';
 }
 
+async function refreshTeacherHistory() {
+  const select = $('teacherHistory');
+  const info = $('teacherHistoryInfo');
+  if (!select) return;
+  try {
+    const sessions = await listTeacherClassSessions();
+    if (!sessions.length) {
+      select.innerHTML = '<option value="">Még nincs felhőben mentett óraelőzmény</option>';
+      select.disabled = true;
+      $('openHistoryBtn').disabled = true;
+      if (info) info.textContent = 'A böngésző törlése után is megmaradó lista az újonnan megnyitott/indított órákkal épül fel.';
+      return;
+    }
+    select.disabled = false;
+    $('openHistoryBtn').disabled = false;
+    select.innerHTML = sessions.map(s => {
+      const when = s.createdAt ? new Date(Number(s.createdAt)).toLocaleString('hu-HU') : '';
+      return `<option value="${esc(s.code)}">${esc(s.code)} – ${esc(s.title || 'Python óra')} – ${s.open ? 'nyitva' : 'lezárva'}${when ? ' – ' + when : ''}</option>`;
+    }).join('');
+    if (info) info.textContent = `${sessions.length} korábbi óra a Firebase-ben.`;
+  } catch (err) {
+    select.innerHTML = '<option value="">Óraelőzmény nem olvasható</option>';
+    select.disabled = true;
+    $('openHistoryBtn').disabled = true;
+    if (info) info.textContent = 'A felhős óraelőzményhez még publikálni kell a teacherClasses Firebase-szabályt.';
+  }
+}
+
 async function watch(code) {
   currentCode = normalizeClassCode(code);
   if (!currentCode) return;
@@ -204,6 +234,12 @@ async function watch(code) {
   meta = await getClassMeta(currentCode);
   if (!meta) throw new Error('Nincs ilyen órakód.');
   renderMeta();
+  try {
+    await rememberTeacherClassSession(currentCode, meta);
+    await refreshTeacherHistory();
+  } catch (err) {
+    console.warn('Az óra megnyílt, de az óraelőzmény-index nem frissült:', err);
+  }
   unsubStudents = await subscribeStudents(currentCode, data => { students = data || {}; renderRows(); });
   unsubMeta = await subscribeClassMeta(currentCode, data => { meta = data; renderMeta(); });
   $('classCode').value = currentCode;
@@ -217,6 +253,7 @@ async function login() {
     $('dashboard').classList.remove('hidden');
     $('firebaseState').textContent = 'Firebase kész ✓';
     $('firebaseState').className = 'runtime ready';
+    await refreshTeacherHistory();
     const last = localStorage.getItem('python_teacher_last_class_v3');
     if (last) { try { await watch(last); } catch {} }
   } catch (e) {
@@ -237,6 +274,7 @@ async function create() {
   }
   await createClassSession({ code, title });
   await watch(code);
+  await refreshTeacherHistory();
 }
 
 function csvSafe(value) {
@@ -291,6 +329,10 @@ function exportExamCsv() {
 $('loginBtn').onclick = login;
 $('createClassBtn').onclick = () => create().catch(e => alert(e.message));
 $('openClassBtn').onclick = () => watch($('classCode').value).catch(e => alert(e.message));
+$('openHistoryBtn').onclick = () => {
+  const code = $('teacherHistory').value;
+  if (code) watch(code).catch(e => alert(e.message));
+};
 $('copyCodeBtn').onclick = () => { if (currentCode) navigator.clipboard.writeText(currentCode); };
 $('toggleClassBtn').onclick = async () => {
   if (!currentCode || !meta) return;
@@ -302,7 +344,7 @@ $('examCsvBtn').onclick = exportExamCsv;
 $('lessonTestBtn').onclick = () => {
   if (!user) return;
   localStorage.setItem(TEACHER_TEST_AUTH_KEY, String(Date.now() + TEACHER_TEST_TTL_MS));
-  window.open('./?test=1', '_blank', 'noopener');
+  location.href = './?test=1';
 };
 $('logoutBtn').onclick = async () => {
   localStorage.removeItem(TEACHER_TEST_AUTH_KEY);
