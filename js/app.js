@@ -56,8 +56,8 @@ function currentItem() {
 function microCoachText(lessonId) {
   const tips = {
     1: '<strong>Jegyezd meg:</strong> ha konkrét szöveget írsz ki, idézőjel kell: <code>print("Szia")</code>.',
-    2: '<strong>Nagyon fontos:</strong> a szöveg és a változó nem ugyanaz. <code>print("ram")</code> a „ram” szót írja ki, <code>print(ram)</code> pedig a <code>ram</code> változó értékét. Szöveges érték: <code>nev = "Anna"</code>; szám: <code>ram = 16</code>.',
-    3: '<strong>Jegyezd meg:</strong> az <code>input()</code> eredménye szöveg. Amit bekérsz, azt általában először változóba mented.',
+    2: '<strong>Nagyon fontos:</strong> a szöveg és a változó nem ugyanaz. <code>print("ram")</code> a „ram” szót írja ki, <code>print(ram)</code> pedig a <code>ram</code> változó értékét. A <code>ram = 16</code> azt jelenti, hogy a változó egyetlen számértéke 16 — nem 16 darab számot kell beírni.',
+    3: '<strong>Jegyezd meg:</strong> egy <code>input()</code> egy bemeneti értéket kér. Az eredménye szöveg, amit általában változóba mentesz. A <strong>Futtatás</strong> gomb most automatikusan ad próba-bemenetet, ha a feladathoz van ilyen tesztadat.',
     4: '<strong>Jegyezd meg:</strong> <code>input()</code> → szöveg. Számoláshoz alakítsd át: <code>int(...)</code> vagy <code>float(...)</code>.',
     5: '<strong>Előbb gondold ki a képletet:</strong> melyik értékből mit kell kivonni, összeadni, szorozni vagy osztani. Csak utána írd Pythonban.',
     6: '<strong>Különbség:</strong> <code>%</code> a maradékot adja, <code>//</code> pedig az egész hányadost.',
@@ -335,7 +335,23 @@ async function runManual() {
   if (busy || !pythonReady) return;
   tracker.record('runCount');
   const code = $('codeEditor').value;
-  const inputs = $('stdinBox').value === '' ? [] : $('stdinBox').value.split(/\r?\n/);
+  const task = currentItem()?.task;
+  let inputs = $('stdinBox').value === '' ? [] : $('stdinBox').value.split(/\r?\n/);
+  let usedAutomaticInput = false;
+
+  // Kezdőbarát kézi futtatás: ha a kód input()-ot használ, de a tanuló nem
+  // adott kézi próbaadatot, használjuk a feladathoz tartozó első tesztbemenetet.
+  if (!inputs.length && /\binput\s*\(/.test(code)) {
+    const sample = (task?.tests || []).find(t => Array.isArray(t.inputs) && t.inputs.length)?.inputs || [];
+    if (sample.length) {
+      inputs = [...sample].map(String);
+      usedAutomaticInput = true;
+    } else {
+      showFeedback('info', '<strong>A programod input()-ot használ.</strong><br>Nyisd le a „Bemeneti adatok kézi futtatáshoz” részt, és minden input()-hoz írj egy próbaértéket külön sorba.');
+      return;
+    }
+  }
+
   setBusy(true, 'Futtatás…');
   $('output').textContent = 'Fut…';
   try {
@@ -347,17 +363,38 @@ async function runManual() {
       $('inputEchoWrap').classList.add('hidden');
     }
     if (!result.ok) {
+      const diagnostic = formatError(result.error);
+      lastDiagnostic = diagnostic;
       $('output').textContent = result.stdoutLines?.join('\n') || '(nincs kimenet)';
-      showFeedback('bad', `<strong>A program hibával leállt.</strong><pre>${escapeHtml(formatError(result.error))}</pre>`);
+      showFeedback('bad', `<strong>A program hibával leállt.</strong><pre>${escapeHtml(diagnostic)}</pre>`);
+      autoExplainFailure('kézi futtatás', diagnostic);
     } else {
       $('output').textContent = result.stdoutLines?.join('\n') || '(nincs kimenet)';
-      showFeedback('info', 'A kézi futtatás befejeződött. Ha késznek gondolod, kattints az <strong>Ellenőrzés</strong> gombra.');
+      const autoNote = usedAutomaticInput
+        ? `<br><span class="tiny">A kézi futtatáshoz automatikusan ezt a próba-bemenetet használtam: <strong>${escapeHtml(inputs.join(' | '))}</strong>.</span>`
+        : '';
+      showFeedback('info', `A kézi futtatás befejeződött. Ha késznek gondolod, kattints az <strong>Ellenőrzés</strong> gombra.${autoNote}`);
     }
   } catch (err) {
     handleRunnerException(err);
   } finally {
     setBusy(false);
   }
+}
+
+let lastAutoAiAt = 0;
+
+function autoExplainFailure(source, diagnostic) {
+  const key = aiEnabled ? getStoredApiKey() : '';
+  if (!key) return;
+  const now = Date.now();
+  if (now - lastAutoAiAt < 5000) return;
+  lastAutoAiAt = now;
+  askAi(
+    `A(z) ${source} nem sikerült. Magyarázd el nagyon egyszerűen és konkrétan, miért nem jó a jelenlegi kód. Először nevezd meg a hibát, utána mondd el a legkisebb javítási irányt. Ne add meg a teljes kész megoldást, ha még nem engedélyezett.`,
+    'aiHints',
+    { automatic: true }
+  );
 }
 
 function failedAttempt(message, diagnostic = '') {
@@ -368,6 +405,7 @@ function failedAttempt(message, diagnostic = '') {
   lastDiagnostic = diagnostic || message;
   showFeedback('bad', message);
   tracker.flush().catch(() => {});
+  autoExplainFailure('automatikus ellenőrzés', lastDiagnostic);
 }
 
 async function checkTask() {
@@ -428,6 +466,8 @@ async function checkTask() {
     store.resetAttempt(key);
     lastDiagnostic = '';
     $('attemptText').textContent = 'Sikeres ✓';
+    $('output').textContent = '✓ Az automatikus ellenőrzés sikeres.';
+    $('inputEchoWrap').classList.add('hidden');
     $('completedBadge').classList.remove('hidden');
     $('nextBtn').classList.remove('hidden');
     renderSidebar();
@@ -510,7 +550,7 @@ function setupEditorBehavior() {
   });
 }
 
-async function askAi(question, activityType = 'aiQuestions') {
+async function askAi(question, activityType = 'aiQuestions', { automatic = false } = {}) {
   const key = aiEnabled ? getStoredApiKey() : '';
   if (!key) {
     addTeacherMessage('Az AI-segítséghez add meg a saját Gemini API-kulcsodat a 🔑 API-kulcs gombbal. A helyi Python-futtatás és ellenőrzés AI nélkül is működik.');
@@ -518,7 +558,7 @@ async function askAi(question, activityType = 'aiQuestions') {
   }
   const { lesson, task, key: taskKey } = currentItem();
   tracker.record(activityType);
-  const placeholder = addTeacherMessage('Gondolkodom…');
+  const placeholder = addTeacherMessage(automatic ? '🤖 Megnézem, miért nem jó…' : 'Gondolkodom…');
   try {
     const result = await tutor.ask({
       question,
@@ -535,11 +575,16 @@ async function askAi(question, activityType = 'aiQuestions') {
     });
     placeholder.textContent = result.text;
     lastAiAnswer = result.text;
-    $('saveAiNoteBtn').disabled = false;
+    store.appendSavedExplanation(lesson.id, result.text);
+    $('saveAiNoteBtn').disabled = true;
+    $('saveAiNoteBtn').textContent = '📝 AI-magyarázat automatikusan mentve a jegyzetbe';
     $('aiModelStatus').textContent = `AI: ${result.model}`;
     tracker.flush().catch(() => {});
   } catch (err) {
-    placeholder.textContent = `AI-hiba: ${err?.message || err}. A Python-futtató és a feladatellenőrző ettől még működik.`;
+    const msg = String(err?.message || err);
+    placeholder.textContent = msg.startsWith('Várj még')
+      ? 'Az AI néhány másodperc múlva újra kérdezhető. A helyi hibamagyarázat addig is megmarad.'
+      : `AI-hiba: ${msg}. A Python-futtató és a feladatellenőrző ettől még működik.`;
   }
 }
 
@@ -606,6 +651,7 @@ async function begin(useAi) {
   tutor.clearHistory();
   lastAiAnswer = '';
   $('saveAiNoteBtn').disabled = true;
+  $('saveAiNoteBtn').textContent = '📝 AI-magyarázatok automatikusan mentve a jegyzetbe';
   const frontier = store.getFrontier(totalTasks);
   const last = store.getLastViewed();
   currentIndex = Math.min(last, frontier >= totalTasks ? totalTasks - 1 : frontier);
@@ -668,12 +714,7 @@ function bootUi() {
     addTeacherMessage(q, 'user');
     askAi(q, 'aiQuestions');
   };
-  $('saveAiNoteBtn').onclick = () => {
-    if (!lastAiAnswer) return;
-    const { lesson } = currentItem();
-    store.appendSavedExplanation(lesson.id, lastAiAnswer);
-    addTeacherMessage('📝 Az utolsó AI-magyarázatot elmentettem a Jegyzet oldalra.');
-  };
+  $('saveAiNoteBtn').onclick = () => {};
   $('clearChatBtn').onclick = () => {
     tutor.clearHistory();
     lastAiAnswer = '';
