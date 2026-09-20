@@ -117,31 +117,36 @@ cpu = float(input("CPU: "))</code></pre>
       <p><code>int()</code> egész számhoz, <code>float()</code> tizedes számhoz használható.</p>`,
     tasks: [
       {
-        text: 'Kérj be egy egész számot, adj hozzá 1-et, majd írd ki. Teszt: 9 → 10.',
+        text: 'Kérj be egy egész számot <code>input()</code>-tal, alakítsd át <code>int()</code>-tel, mentsd változóba, majd írd ki. Itt még <strong>nem számolunk</strong>, csak a típusátalakítást gyakoroljuk.',
         starter: '',
-        checks: [{ type: 'call', name: 'input', min: 1 }, { type: 'call', name: 'int', min: 1 }, { type: 'op', name: 'Add', min: 1 }],
-        tests: [{ inputs: ['9'], expectedLines: ['10'] }, { inputs: ['-2'], expectedLines: ['-1'] }],
-        hints: ['A bekért értéket alakítsd <code>int</code>-té.', 'A számhoz ezután már hozzáadhatsz 1-et.'],
-        solution: 'szam = int(input("Szám: "))\nprint(szam + 1)'
+        checks: [{ type: 'call', name: 'input', min: 1 }, { type: 'call', name: 'int', min: 1 }, { type: 'call', name: 'print', min: 1 }],
+        tests: [{ inputs: ['0016'], expectedLines: ['16'] }, { inputs: ['-02'], expectedLines: ['-2'] }],
+        hints: ['Először kérd be az adatot <code>input()</code>-tal.', 'Az <code>int(...)</code> alakítja a szöveget egész számmá. Utána csak írd ki a változót.'],
+        solution: 'szam = int(input("Egész szám: "))\nprint(szam)'
       },
       {
-        text: 'Kérd be a CPU-terhelést tizedes számként, majd írd ki. Teszt: <code>72.5</code>.',
+        text: 'Kérj be egy tizedes számot, alakítsd át <code>float()</code>-tal, mentsd változóba, majd írd ki. Itt még <strong>nem végzünk műveletet</strong> a számmal.',
         starter: '',
-        checks: [{ type: 'call', name: 'float', min: 1 }, { type: 'call', name: 'print', min: 1 }],
-        tests: [{ inputs: ['72.5'], expectedLines: ['72.5'] }, { inputs: ['0.25'], expectedLines: ['0.25'] }],
+        checks: [{ type: 'call', name: 'input', min: 1 }, { type: 'call', name: 'float', min: 1 }, { type: 'call', name: 'print', min: 1 }],
+        tests: [{ inputs: ['72.50'], expectedLines: ['72.5'] }, { inputs: ['000.25'], expectedLines: ['0.25'] }],
         hints: ['Tizedes számhoz <code>float()</code> kell.', 'A <code>float(input(...))</code> közvetlenül is használható.'],
-        solution: 'cpu = float(input("CPU: "))\nprint(cpu)'
+        solution: 'ertek = float(input("Tizedes szám: "))\nprint(ertek)'
       },
       {
-        text: 'Kevert gyakorlás: kérj be két egész számot és írd ki az összegüket. Rejtett tesztekkel is ellenőrizzük.',
+        text: 'Önálló gyakorlás: kérj be először egy egész számot, majd egy tizedes számot. Az elsőt alakítsd <code>int()</code>-tel, a másodikat <code>float()</code>-tal, majd írd ki őket két külön sorba. <strong>Most még ne adj össze, ne vonj ki, ne szorozz és ne ossz.</strong>',
         starter: '',
-        checks: [{ type: 'call', name: 'int', min: 2 }, { type: 'op', name: 'Add', min: 1 }],
-        tests: [
-          { inputs: ['12', '8'], expectedLines: ['20'] },
-          { inputs: ['-3', '10'], expectedLines: ['7'] }
+        checks: [
+          { type: 'call', name: 'input', min: 2 },
+          { type: 'call', name: 'int', min: 1 },
+          { type: 'call', name: 'float', min: 1 },
+          { type: 'call', name: 'print', min: 2 }
         ],
-        hints: ['Mindkét bemenetet alakítsd számmá.', 'Az összeadás a két változó között történjen, ne írj be fix eredményt.'],
-        solution: 'a = int(input("a: "))\nb = int(input("b: "))\nprint(a + b)'
+        tests: [
+          { inputs: ['0016', '72.50'], expectedLines: ['16', '72.5'] },
+          { inputs: ['0003', '0.25'], expectedLines: ['3', '0.25'] }
+        ],
+        hints: ['Az első bemenethez <code>int()</code>, a másodikhoz <code>float()</code> kell.', 'Két külön változót írj ki két külön <code>print()</code>-tel.'],
+        solution: 'egesz = int(input("Egész szám: "))\ntizedes = float(input("Tizedes szám: "))\nprint(egesz)\nprint(tizedes)'
       }
     ]
   },
