@@ -176,6 +176,17 @@ function activeSession(examId) {
 
 function checkpointReadiness(ex) {
   if (TEACHER_EXAM_TEST_MODE) return { allowed: true, reason: '' };
+
+  if (ex.requiredCheckpoint && !store.isCheckpointPassed(ex.requiredCheckpoint)) {
+    const required = checkpointById(ex.requiredCheckpoint);
+    return {
+      allowed: false,
+      reason: required
+        ? `Előbb teljesítsd a tananyagot és ezt a kötelező kisvizsgát: ${required.title}.`
+        : 'Ehhez a vizsgához még hiányzik egy kötelező tananyagi előfeltétel.'
+    };
+  }
+
   if (!ex.checkpoint) return { allowed: true, reason: '' };
   const cp = checkpointById(ex.checkpointId || ex.id);
   if (!cp) return { allowed: true, reason: '' };
