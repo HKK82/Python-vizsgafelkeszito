@@ -36,7 +36,12 @@ const regressions = [
   ['10.3 láncolt összehasonlítás menjen át', lessons[9].tasks[2], 'p=int(input());\nif 1024 <= p <= 49151:\n print("regisztrált/tartomány")\nelse:\n print("más")', true],
   ['12.3 += megoldás menjen át', lessons[11].tasks[2], 'szerverek=[]\nszerverek += [input()]\nszerverek += [input()]\nprint(len(szerverek))', true],
   ['16.1 main-guard menjen át', lessons[15].tasks[0], 'def osszeg(a,b):\n    return a+b\nif __name__ == "__main__":\n    print(input())', true],
-  ['16.2 egy returnnel menjen át', lessons[15].tasks[1], 'def cpu_statusz(cpu):\n    if cpu >= 90:\n        status = "KRITIKUS"\n    elif cpu >= 70:\n        status = "FIGYELMEZTETÉS"\n    else:\n        status = "OK"\n    return status', true]
+  ['16.2 egy returnnel menjen át', lessons[15].tasks[1], 'def cpu_statusz(cpu):\n    if cpu >= 90:\n        status = "KRITIKUS"\n    elif cpu >= 70:\n        status = "FIGYELMEZTETÉS"\n    else:\n        status = "OK"\n    return status', true],
+  ['sandbox: os import tiltva', lessons[0].tasks[0], 'import os\nprint("Szia, Python!")', false],
+  ['sandbox: sys import tiltva', lessons[0].tasks[0], 'import sys\nprint("Szia, Python!")', false],
+  ['sandbox: dunder attribútum tiltva', lessons[0].tasks[0], 'print((1).__class__)', false],
+  ['sandbox: eval tiltva', lessons[0].tasks[0], 'print(eval("\\\"Szia, Python!\\\""))', false],
+  ['sandbox: math modul engedélyezett', lessons[0].tasks[0], 'import math\nprint("Szia, Python!")', true]
 ];
 for (const [name, task, code, expected] of regressions) {
   payloadCases.push({ task, code });
