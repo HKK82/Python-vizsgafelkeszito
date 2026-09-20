@@ -111,5 +111,7 @@ export class ActivityTracker {
     this.stopTimers();
     this.classCode = '';
     this.uid = '';
+    this.meta = null;
+    this.onStatus?.({ connected: false });
   }
 }
