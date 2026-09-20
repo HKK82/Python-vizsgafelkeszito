@@ -2,6 +2,7 @@ const STATE_KEY = 'python_exam_trainer_state_v2';
 const API_KEY_SESSION = 'python_exam_trainer_api_session_v2';
 const API_KEY_LOCAL = 'python_exam_trainer_api_local_v2';
 const CURRICULUM_REVISION = '2026-09-20-sequencing-v1';
+const LEGACY_PROGRESS_REPAIR_REVISION = '2026-09-20-contiguous-v1';
 
 const memoryFallback = {};
 
@@ -67,6 +68,36 @@ function applyCurriculumRevision(profile, taskOrder = []) {
   return true;
 }
 
+function repairLegacySequentialProgress(profile, taskOrder = []) {
+  normalizeProfile(profile);
+  if (profile.legacyProgressRepairRevision === LEGACY_PROGRESS_REPAIR_REVISION) return false;
+  if (!Array.isArray(taskOrder) || !taskOrder.length) return false;
+
+  // A korábbi verziókban csak sorrendben lehetett előrehaladni.
+  // Ha egy későbbi feladat már teljesített, az előtte levő lyukak migrációs hibák.
+  let highestCompleted = -1;
+  for (let i = 0; i < taskOrder.length; i += 1) {
+    if (profile.completed?.[taskOrder[i]]) highestCompleted = i;
+  }
+
+  if (highestCompleted >= 0) {
+    for (let i = 0; i <= highestCompleted; i += 1) {
+      profile.completed[taskOrder[i]] = true;
+    }
+  }
+
+  let frontier = 0;
+  while (frontier < taskOrder.length && profile.completed?.[taskOrder[frontier]]) frontier += 1;
+  profile.frontier = frontier;
+
+  // Csak a migrációkor állítjuk a folytatási pontot a ténylegesen elért legvégére.
+  if (frontier > 0) profile.lastViewed = Math.max(Number(profile.lastViewed) || 0, frontier - 1);
+
+  profile.legacyProgressRepairRevision = LEGACY_PROGRESS_REPAIR_REVISION;
+  profile.updatedAt = new Date().toISOString();
+  return true;
+}
+
 export class ProgressStore {
   constructor() {
     this.state = this.loadState();
@@ -116,6 +147,7 @@ export class ProgressStore {
       this.state.profiles[key].displayName = displayName.trim() || this.state.profiles[key].displayName;
     }
     applyCurriculumRevision(this.state.profiles[key], this.taskOrder);
+    repairLegacySequentialProgress(this.state.profiles[key], this.taskOrder);
     this.state.currentStudentKey = key;
     this.persist();
     return this.state.profiles[key];
@@ -505,6 +537,7 @@ export class ProgressStore {
     const profile = payload.profile;
     normalizeProfile(profile);
     applyCurriculumRevision(profile, this.taskOrder);
+    repairLegacySequentialProgress(profile, this.taskOrder);
     profile.updatedAt = new Date().toISOString();
     const key = normalizeStudentKey(profile.displayName);
     this.state.profiles[key] = profile;
