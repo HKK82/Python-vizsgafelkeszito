@@ -489,6 +489,7 @@ function handleRunnerException(err) {
     lastDiagnostic = message;
     showFeedback('bad', `<strong>Időtúllépés.</strong><br>${escapeHtml(message)}`);
     addTeacherMessage('Valószínűleg végtelen ciklusba került a program. Nézd meg a while feltételét és azt, hogy a cikluson belül tényleg változik-e a vezérlő változó.');
+    autoExplainFailure('futtatás', message);
   } else {
     showFeedback('bad', `<strong>Technikai hiba:</strong> ${escapeHtml(err?.message || String(err))}`);
   }
