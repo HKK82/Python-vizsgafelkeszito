@@ -3,6 +3,7 @@ import { flattenTasks, totalTasks } from './lessons.js';
 import { ProgressStore } from './storage.js';
 import { PythonRunner } from './python-runner.js';
 import { ActivityTracker } from './activity.js';
+import { checkpointById } from './checkpoints.js';
 
 const $ = id => document.getElementById(id);
 const store = new ProgressStore();
@@ -67,6 +68,59 @@ function activeSession(examId) {
   return s && Number(s.endAt) > 0 && !s.submitted ? s : null;
 }
 
+function checkpointReadiness(ex) {
+  if (!ex.checkpoint) return { allowed: true, reason: '' };
+  const cp = checkpointById(ex.checkpointId || ex.id);
+  if (!cp) return { allowed: true, reason: '' };
+
+  // Első próbán a blokk minden leckéjének önálló (3/3) feladata legyen kész.
+  const baseKeys = cp.lessonIds.map(id => `${id}.3`);
+  const missingBase = baseKeys.filter(key => !store.isCompleted(key));
+  const state = store.getCheckpoint(cp.id);
+  const reviewKeys = state?.reviewTaskKeys || [];
+  const missingReview = reviewKeys.filter(key => !store.isCompleted(key));
+
+  if (missingReview.length) {
+    return {
+      allowed: false,
+      reason: `Előbb teljesítsd a célzott újragyakorlást: ${missingReview.join(', ')}. Mindegyikből 2 egymást követő önálló siker kell.`
+    };
+  }
+  if (!state?.passed && missingBase.length) {
+    return {
+      allowed: false,
+      reason: `A kisvizsga előtt fejezd be a blokk önálló feladatait: ${missingBase.join(', ')}.`
+    };
+  }
+  return { allowed: true, reason: '' };
+}
+
+function checkpointStateLabel(ex) {
+  if (!ex.checkpoint) return '';
+  const state = store.getCheckpoint(ex.checkpointId || ex.id);
+  if (state?.passed) return '<span class="badge done">✓ TELJESÍTVE</span>';
+  if (state?.reviewTaskKeys?.length) return '<span class="badge">↻ ÚJRAGYAKORLÁS</span>';
+  return '<span class="examModeTag">KISVIZSGA</span>';
+}
+
+function reviewLessonIdsFromResults(ex, taskResults) {
+  const threshold = Number(ex.minTaskPct ?? 60) / 100;
+  let weakIndexes = taskResults
+    .map((r, i) => ({ i, ratio: r.maxScore ? r.score / r.maxScore : 0 }))
+    .filter(x => x.ratio < threshold)
+    .map(x => x.i);
+
+  if (!weakIndexes.length) {
+    const minRatio = Math.min(...taskResults.map(r => r.maxScore ? r.score / r.maxScore : 0));
+    weakIndexes = taskResults
+      .map((r, i) => ({ i, ratio: r.maxScore ? r.score / r.maxScore : 0 }))
+      .filter(x => x.ratio === minRatio)
+      .map(x => x.i);
+  }
+
+  return [...new Set(weakIndexes.flatMap(i => ex.tasks[i]?.lessonIds || []))];
+}
+
 function render() {
   const p = store.getCurrentProfile();
   $('examList').innerHTML = exams.map(ex => {
@@ -101,6 +155,12 @@ function startExam(id) {
   const ex = exams.find(x => x.id === id);
   const body = document.querySelector(`[data-body="${id}"]`);
   if (!ex || !body) return;
+  const readiness = checkpointReadiness(ex);
+  if (!readiness.allowed) {
+    body.classList.remove('hidden');
+    body.innerHTML = `<div class="feedback info"><strong>Célzott gyakorlás szükséges.</strong><br>${esc(readiness.reason)}<br><br><a class="buttonLike" href="./index.html">Vissza a Tanuláshoz</a></div>`;
+    return;
+  }
   body.classList.remove('hidden');
 
   let session = activeSession(id);
@@ -200,25 +260,81 @@ async function submitExam(ex) {
   }
 
   const max = ex.tasks.reduce((a, t) => a + t.points, 0);
+  const durationSeconds = Math.max(0, Math.round((Date.now() - Number(body.dataset.started)) / 1000));
+  const pct = max ? Math.round(total / max * 100) : 0;
+  const minTaskPct = Number(ex.minTaskPct ?? 0);
+  const allTasksStrongEnough = !ex.checkpoint || taskResults.every(r =>
+    r.maxScore > 0 && (r.score / r.maxScore * 100) >= minTaskPct
+  );
+  const checkpointPassed = !!ex.checkpoint && pct >= Number(ex.passPct ?? 80) && allTasksStrongEnough;
+
   store.saveExamResult(ex.id, {
     score: total,
     maxScore: max,
     taskResults,
-    durationSeconds: Math.max(0, Math.round((Date.now() - Number(body.dataset.started)) / 1000))
+    durationSeconds,
+    passed: ex.checkpoint ? checkpointPassed : undefined
   });
+
+  if (ex.checkpoint) {
+    if (checkpointPassed) {
+      store.saveCheckpointOutcome(ex.checkpointId || ex.id, {
+        passed: true,
+        score: total,
+        maxScore: max,
+        pct,
+        reviewTaskKeys: [],
+        passedAt: new Date().toISOString()
+      });
+    } else {
+      const weakLessonIds = reviewLessonIdsFromResults(ex, taskResults);
+      const reviewTaskKeys = weakLessonIds.map(id => `${id}.3`);
+      store.requireCheckpointReview(ex.checkpointId || ex.id, reviewTaskKeys);
+      store.saveCheckpointOutcome(ex.checkpointId || ex.id, {
+        passed: false,
+        score: total,
+        maxScore: max,
+        pct,
+        weakLessonIds,
+        reviewTaskKeys
+      });
+    }
+  }
   store.clearExamSession(ex.id);
   store.clearExamDrafts(ex.id);
   button.textContent = `Eredmény: ${total}/${max} pont`;
   tracker.record('successfulChecks');
   tracker.flush().catch(() => {});
-  renderAfterSubmit(ex.id, total, max);
+  renderAfterSubmit(ex, total, max, taskResults);
 }
 
-function renderAfterSubmit(id, total, max) {
-  const card = document.querySelector(`[data-exam="${id}"]`);
+function renderAfterSubmit(ex, total, max, taskResults) {
+  const card = document.querySelector(`[data-exam="${ex.id}"]`);
   const h = document.createElement('div');
-  h.className = 'feedback ok';
-  h.innerHTML = `<strong>Részvizsga eredménye: ${total}/${max} pont (${Math.round(total / max * 100)}%)</strong><br>Az eredmény a Haladás oldalon is megjelenik.`;
+  const pct = max ? Math.round(total / max * 100) : 0;
+
+  if (!ex.checkpoint) {
+    h.className = 'feedback ok';
+    h.innerHTML = `<strong>Részvizsga eredménye: ${total}/${max} pont (${pct}%)</strong><br>Az eredmény a Haladás oldalon is megjelenik.`;
+    card.appendChild(h);
+    return;
+  }
+
+  const state = store.getCheckpoint(ex.checkpointId || ex.id);
+  if (state?.passed) {
+    h.className = 'feedback ok';
+    h.innerHTML = `<strong>✓ Kisvizsga teljesítve: ${total}/${max} pont (${pct}%).</strong><br>Megnyílt a következő tananyagi blokk.<br><br><a class="buttonLike" href="./index.html">Folytatás a következő leckével →</a>`;
+  } else {
+    const weak = state?.weakLessonIds || [];
+    const keys = state?.reviewTaskKeys || [];
+    h.className = 'feedback bad';
+    h.innerHTML = `<strong>A kisvizsga még nem teljesült: ${total}/${max} pont (${pct}%).</strong><br>
+      A továbblépéshez legalább ${ex.passPct || 80}% kell, és minden feladatból legalább ${ex.minTaskPct || 60}%.<br>
+      Célzottan újra kell gyakorolnod: <strong>${weak.length ? weak.map(x => x + '. lecke').join(', ') : 'a leggyengébb területet'}</strong>.<br>
+      Az érintett 3/3 önálló feladat(ok)nál <strong>2 egymást követő siker</strong> szükséges. Ezután új kisvizsga következik.<br>
+      <span class="tiny">Újranyitott feladatok: ${esc(keys.join(', '))}</span><br><br>
+      <a class="buttonLike" href="./index.html">Vissza a célzott gyakorláshoz →</a>`;
+  }
   card.appendChild(h);
 }
 
@@ -238,7 +354,18 @@ async function boot() {
   }
 
   const active = exams.find(ex => activeSession(ex.id));
-  if (active) startExam(active.id);
+  if (active) {
+    startExam(active.id);
+    return;
+  }
+
+  const requested = new URLSearchParams(location.search).get('checkpoint');
+  if (requested) {
+    const ex = exams.find(x => x.id === requested && x.checkpoint);
+    const card = ex ? document.querySelector(`[data-exam="${ex.id}"]`) : null;
+    card?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    if (ex && checkpointReadiness(ex).allowed) startExam(ex.id);
+  }
 }
 
 boot().catch(e => {
