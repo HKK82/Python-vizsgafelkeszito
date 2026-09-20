@@ -22,6 +22,11 @@ let draftTimer = null;
 let aiEnabled = false;
 let lastAiAnswer = '';
 const CLASS_CODE_KEY = 'python_exam_trainer_class_code_v3';
+const TEACHER_TEST_AUTH_KEY = 'python_teacher_test_authorized_until_v1';
+const TEST_PROFILE_NAME = '🧪 Oktatói teszt';
+const testRequested = new URLSearchParams(location.search).get('test') === '1';
+const testAuthorizedUntil = Number(localStorage.getItem(TEACHER_TEST_AUTH_KEY) || 0);
+const TEST_MODE = testRequested && testAuthorizedUntil > Date.now();
 
 const tracker = new ActivityTracker({
   getProgressSnapshot: () => {
@@ -228,11 +233,13 @@ function isLessonDone(lessonIndex) {
 }
 
 function checkpointAllowsLesson(lessonId) {
+  if (TEST_MODE) return true;
   const required = checkpointRequiredBeforeLesson(lessonId);
   return !required || store.isCheckpointPassed(required.id);
 }
 
 function isLessonUnlocked(lessonIndex) {
+  if (TEST_MODE) return true;
   const indices = lessonTaskIndices(lessonIndex);
   const frontier = store.getFrontier(totalTasks);
   const done = isLessonDone(lessonIndex);
@@ -264,9 +271,54 @@ function firstLessonIndex(lessonIndex) {
 
 function lessonChoiceTarget(lessonIndex) {
   const indices = lessonTaskIndices(lessonIndex);
+  if (TEST_MODE) return indices[0] ?? 0;
   const frontier = store.getFrontier(totalTasks);
   const firstIncomplete = indices.find(i => !store.isCompleted(items[i].key) && i <= frontier);
   return firstIncomplete ?? indices[0] ?? 0;
+}
+
+function renderAdminTestPanel() {
+  const panel = $('adminTestPanel');
+  if (!panel) return;
+  panel.classList.toggle('hidden', !TEST_MODE);
+  if (!TEST_MODE) return;
+
+  const lessonSelect = $('testLessonSelect');
+  const taskSelect = $('testTaskSelect');
+  const active = currentItem();
+  const activeLessonIndex = active?.lessonIndex ?? 0;
+
+  lessonSelect.innerHTML = lessons.map((lesson, i) =>
+    `<option value="${i}" ${i === activeLessonIndex ? 'selected' : ''}>${lesson.id}. ${escapeHtml(lesson.title)}</option>`
+  ).join('');
+
+  const refreshTasks = (lessonIndex, selectedTaskIndex = 0) => {
+    const lesson = lessons[lessonIndex];
+    const labels = ['1/3 – Tanulás mintával', '2/3 – Gyakorlás puskával', '3/3 – Önálló próba'];
+    taskSelect.innerHTML = lesson.tasks.map((task, i) =>
+      `<option value="${i}" ${i === selectedTaskIndex ? 'selected' : ''}>${labels[i] || `${i + 1}. feladat`}</option>`
+    ).join('');
+  };
+
+  refreshTasks(activeLessonIndex, active?.taskIndex ?? 0);
+  lessonSelect.onchange = () => refreshTasks(Number(lessonSelect.value), 0);
+}
+
+function testTargetIndex(lessonIndex, taskIndex) {
+  return items.findIndex(x => x.lessonIndex === lessonIndex && x.taskIndex === taskIndex);
+}
+
+function jumpToTestSelection() {
+  if (!TEST_MODE) return;
+  const lessonIndex = Number($('testLessonSelect').value);
+  const taskIndex = Number($('testTaskSelect').value);
+  const target = testTargetIndex(lessonIndex, taskIndex);
+  if (target >= 0) {
+    const current = currentItem();
+    if (current && $('codeEditor')) store.saveDraft(current.key, $('codeEditor').value);
+    currentIndex = target;
+    renderTask();
+  }
 }
 
 function renderLessonNavigator() {
@@ -314,9 +366,9 @@ function updateCloudStatus(status = {}) {
 tracker.onStatus = updateCloudStatus;
 
 function renderSidebar() {
-  $('studentLabel').textContent = store.getCurrentStudentName() || 'Tanuló';
-  $('progressBar').style.width = `${progressPercent()}%`;
-  $('progressText').textContent = `${store.completedCount()} / ${totalTasks} feladat kész`;
+  $('studentLabel').textContent = TEST_MODE ? '🧪 Oktatói teszt' : (store.getCurrentStudentName() || 'Tanuló');
+  $('progressBar').style.width = TEST_MODE ? '100%' : `${progressPercent()}%`;
+  $('progressText').textContent = TEST_MODE ? 'Teszt mód – tanulói haladástól elkülönítve' : `${store.completedCount()} / ${totalTasks} feladat kész`;
   const list = $('lessonList');
   list.innerHTML = '';
   lessons.forEach((lesson, lessonIndex) => {
@@ -340,6 +392,7 @@ function renderTask() {
   const { lesson, task, key, taskIndex } = currentItem();
   renderSidebar();
   renderLessonNavigator();
+  renderAdminTestPanel();
   $('lessonBadge').textContent = `${lesson.id}. lecke`;
   $('lessonTitle').textContent = lesson.title;
   $('lessonObjective').textContent = lesson.objective;
@@ -377,7 +430,7 @@ function renderTask() {
 
   $('completedBadge').classList.toggle('hidden', !completed);
   $('nextBtn').classList.toggle('hidden', !completed);
-  const pendingCheckpoint = pendingCheckpointAfterCurrentLesson();
+  const pendingCheckpoint = TEST_MODE ? null : pendingCheckpointAfterCurrentLesson();
   const repairedFrontier = store.repairFrontier(totalTasks);
   const hasEarlierGap = completed && repairedFrontier < currentIndex;
   $('nextBtn').textContent = hasEarlierGap
@@ -399,10 +452,18 @@ function renderTask() {
 }
 
 function navigateTo(index) {
-  const frontier = store.repairFrontier(totalTasks);
   const safeIndex = Math.max(0, Math.min(index, items.length - 1));
   const target = items[safeIndex];
 
+  if (TEST_MODE) {
+    const current = currentItem();
+    if (current && $('codeEditor')) store.saveDraft(current.key, $('codeEditor').value);
+    currentIndex = safeIndex;
+    renderTask();
+    return;
+  }
+
+  const frontier = store.repairFrontier(totalTasks);
   if (safeIndex > frontier && !store.isCompleted(target.key)) {
     const missingIndex = Math.min(frontier, items.length - 1);
     const missing = items[missingIndex];
@@ -433,6 +494,10 @@ function navigateTo(index) {
 }
 
 function nextTask() {
+  if (TEST_MODE) {
+    if (currentIndex < items.length - 1) navigateTo(currentIndex + 1);
+    return;
+  }
   const cp = pendingCheckpointAfterCurrentLesson();
   if (cp) {
     goToCheckpoint(cp);
@@ -934,6 +999,16 @@ function bootUi() {
     const lessonIndex = currentItem()?.lessonIndex ?? 0;
     navigateTo(firstLessonIndex(lessonIndex));
   };
+  $('testJumpBtn').onclick = jumpToTestSelection;
+  $('testResetTaskBtn').onclick = () => {
+    if (!TEST_MODE) return;
+    const item = currentItem();
+    store.resetTask(item.key);
+    $('codeEditor').value = item.task.starter || '';
+    renderTask();
+    showFeedback('info', '<strong>Az aktuális tesztfeladat helyi állapota törölve.</strong><br>Újra tiszta lappal próbálhatod.');
+  };
+
   $('lessonSelect').onchange = event => {
     const lessonIndex = Number(event.target.value);
     if (!Number.isInteger(lessonIndex) || !isLessonUnlocked(lessonIndex)) {
@@ -991,10 +1066,29 @@ async function boot() {
   bootUi();
   updateCloudStatus();
   updatePythonStatus('loading');
-  openSetup();
+
+  if (TEST_MODE) {
+    sessionStorage.removeItem(CLASS_CODE_KEY);
+    store.setCurrentStudent(TEST_PROFILE_NAME);
+    const p = store.getCurrentProfile();
+    if (p) {
+      p.isTestProfile = true;
+      store.persist();
+    }
+    aiEnabled = !!getStoredApiKey();
+    $('setupOverlay').classList.add('hidden');
+    currentIndex = 0;
+  } else {
+    if (testRequested && !TEST_MODE) {
+      alert('A lecketeszt módot a tanári oldalról kell megnyitni Google-belépés után.');
+    }
+    openSetup();
+  }
+
   try {
     await runner.start();
     updatePythonStatus('ready');
+    if (TEST_MODE) renderTask();
   } catch (err) {
     updatePythonStatus('error');
     showFeedback('bad', `Nem sikerült betölteni a Python környezetet: ${escapeHtml(err?.message || err)}`);
