@@ -53,7 +53,7 @@ print(szerver)</code></pre>
         solution: 'szerver = "SRV01"\nprint(szerver)'
       },
       {
-        text: 'Hozz létre <code>ram</code> nevű változót 16 értékkel, majd írd ki.',
+        text: 'Hozz létre egy <code>ram</code> nevű változót, és adj neki <strong>egyetlen számértéket: <code>16</code></strong>. Ezután írd ki a <code>ram</code> változó értékét. Nem 16 darab számot kell megadni.',
         starter: 'ram = \n',
         checks: [{ type: 'node', name: 'Assign', min: 1 }, { type: 'call', name: 'print', min: 1 }],
         tests: [{ inputs: [], expectedLines: ['16'] }],
@@ -81,7 +81,7 @@ print(nev)</code></pre>
       <p>Az <code>input()</code> eredménye mindig szöveg, vagyis <code>str</code>, amíg át nem alakítod.</p>`,
     tasks: [
       {
-        text: 'Kérd be a felhasználó nevét <code>nev</code> változóba, majd írd ki. Az ellenőrzéskor a bemenet: <code>Bence</code>.',
+        text: 'A program kérjen be <strong>egy darab nevet</strong> <code>input()</code>-tal, mentse a <code>nev</code> változóba, majd írja ki. Az automatikus ellenőrzés próbaként például a <code>Bence</code> nevet adja majd a programnak.',
         starter: 'nev = input("Neved: ")\n',
         checks: [{ type: 'call', name: 'input', min: 1 }, { type: 'call', name: 'print', min: 1 }],
         tests: [{ inputs: ['Bence'], expectedLines: ['Bence'] }, { inputs: ['Anna'], expectedLines: ['Anna'] }],
@@ -89,7 +89,7 @@ print(nev)</code></pre>
         solution: 'nev = input("Neved: ")\nprint(nev)'
       },
       {
-        text: 'Kérd be egy szerver nevét <code>szerver</code> változóba, majd írd ki. Tesztbemenet: <code>SRV02</code>.',
+        text: 'A program kérjen be <strong>egy darab szervernevet</strong> <code>input()</code>-tal, mentse a <code>szerver</code> változóba, majd írja ki. Az automatikus ellenőrzés több különböző névvel is kipróbálja.',
         starter: '',
         checks: [{ type: 'call', name: 'input', min: 1 }, { type: 'call', name: 'print', min: 1 }],
         tests: [{ inputs: ['SRV02'], expectedLines: ['SRV02'] }, { inputs: ['DB01'], expectedLines: ['DB01'] }],
