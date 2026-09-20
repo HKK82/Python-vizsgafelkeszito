@@ -34,6 +34,8 @@ function normalizeProfile(profile) {
   profile.examResults ||= {};
   profile.examDrafts ||= {};
   profile.examSessions ||= {};
+  profile.checkpoints ||= {};
+  profile.masteryStreaks ||= {};
   profile.lastViewed ||= 0;
   profile.updatedAt ||= new Date().toISOString();
   profile.curriculumRevision ||= '';
@@ -103,6 +105,8 @@ export class ProgressStore {
         examResults: {},
         examDrafts: {},
         examSessions: {},
+        checkpoints: {},
+        masteryStreaks: {},
         lastViewed: 0,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
@@ -244,10 +248,112 @@ export class ProgressStore {
       examResults: {},
       examDrafts: {},
       examSessions: {},
+      checkpoints: {},
+      masteryStreaks: {},
       lastViewed: 0,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
+    this.persist();
+  }
+
+  _recomputeFrontier() {
+    const p = this.getCurrentProfile();
+    if (!p || !Array.isArray(this.taskOrder)) return;
+    let frontier = 0;
+    while (frontier < this.taskOrder.length && p.completed?.[this.taskOrder[frontier]]) frontier += 1;
+    p.frontier = frontier;
+    p.lastViewed = Math.min(p.lastViewed || 0, Math.max(0, frontier));
+  }
+
+  getCheckpoint(checkpointId) {
+    const p = this.getCurrentProfile();
+    if (!p) return null;
+    normalizeProfile(p);
+    return p.checkpoints[String(checkpointId)] || null;
+  }
+
+  isCheckpointPassed(checkpointId) {
+    return !!this.getCheckpoint(checkpointId)?.passed;
+  }
+
+  saveCheckpointOutcome(checkpointId, outcome) {
+    const p = this.getCurrentProfile();
+    if (!p) return;
+    normalizeProfile(p);
+    const id = String(checkpointId);
+    p.checkpoints[id] = {
+      ...(p.checkpoints[id] || {}),
+      ...outcome,
+      updatedAt: new Date().toISOString()
+    };
+    if (outcome.passed) {
+      p.checkpoints[id].reviewTaskKeys = [];
+    }
+    p.updatedAt = new Date().toISOString();
+    this.persist();
+  }
+
+  requireCheckpointReview(checkpointId, taskKeys) {
+    const p = this.getCurrentProfile();
+    if (!p) return;
+    normalizeProfile(p);
+    const unique = [...new Set((taskKeys || []).map(String))];
+    p.checkpoints[String(checkpointId)] = {
+      ...(p.checkpoints[String(checkpointId)] || {}),
+      passed: false,
+      reviewTaskKeys: unique,
+      updatedAt: new Date().toISOString()
+    };
+    for (const key of unique) {
+      delete p.completed[key];
+      delete p.attempts[key];
+      delete p.drafts[key];
+      delete p.viewedSolutions[key];
+      p.masteryStreaks[key] = 0;
+    }
+    this._recomputeFrontier();
+    p.updatedAt = new Date().toISOString();
+    this.persist();
+  }
+
+  checkpointReviewTaskKeys(checkpointId) {
+    return [...(this.getCheckpoint(checkpointId)?.reviewTaskKeys || [])];
+  }
+
+  isReviewTask(taskKey) {
+    const p = this.getCurrentProfile();
+    if (!p) return false;
+    normalizeProfile(p);
+    return Object.values(p.checkpoints || {}).some(cp =>
+      !cp?.passed && Array.isArray(cp?.reviewTaskKeys) && cp.reviewTaskKeys.includes(String(taskKey))
+    );
+  }
+
+  getMasteryStreak(taskKey) {
+    const p = this.getCurrentProfile();
+    if (!p) return 0;
+    normalizeProfile(p);
+    return Number(p.masteryStreaks[String(taskKey)] || 0);
+  }
+
+  recordMasterySuccess(taskKey) {
+    const p = this.getCurrentProfile();
+    if (!p) return 0;
+    normalizeProfile(p);
+    const key = String(taskKey);
+    p.masteryStreaks[key] = Number(p.masteryStreaks[key] || 0) + 1;
+    p.updatedAt = new Date().toISOString();
+    this.persist();
+    return p.masteryStreaks[key];
+  }
+
+  resetMasteryStreak(taskKey) {
+    const p = this.getCurrentProfile();
+    if (!p) return;
+    normalizeProfile(p);
+    p.masteryStreaks[String(taskKey)] = 0;
+    p.updatedAt = new Date().toISOString();
     this.persist();
   }
 
