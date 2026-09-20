@@ -126,14 +126,22 @@ function render() {
   $('examList').innerHTML = exams.map(ex => {
     const last = store.getExamResults(ex.id).slice(-1)[0];
     const active = activeSession(ex.id);
+    const readiness = checkpointReadiness(ex);
+    const disabled = !p || !readiness.allowed;
+    const startLabel = active
+      ? (ex.checkpoint ? 'Kisvizsga folytatása' : 'Részvizsga folytatása')
+      : (ex.checkpoint ? 'Kisvizsga indítása' : 'Részvizsga indítása');
     return `<section class="card examCard" data-exam="${ex.id}">
       <div class="teacherHero"><div><h2>${esc(ex.title)}</h2><p class="muted">${esc(ex.description)}</p></div>
-      <div><span class="badge">${ex.durationMinutes} perc</span>${ex.examMode ? '<span class="examModeTag">VIZSGASZIMULÁCIÓ</span>' : ''}${last ? `<div class="tiny">Legutóbb: ${last.score}/${last.maxScore} pont</div>` : ''}</div></div>
-      <button class="primary" data-start="${ex.id}" ${!p ? 'disabled' : ''}>${active ? 'Részvizsga folytatása' : 'Részvizsga indítása'}</button>
+      <div><span class="badge">${ex.durationMinutes} perc</span>${checkpointStateLabel(ex)}${ex.examMode ? '<span class="examModeTag">VIZSGASZIMULÁCIÓ</span>' : ''}${last ? `<div class="tiny">Legutóbb: ${last.score}/${last.maxScore} pont</div>` : ''}</div></div>
+      ${readiness.reason ? `<div class="feedback info"><strong>Most még nem indítható.</strong><br>${esc(readiness.reason)}</div>` : ''}
+      <button class="primary" data-start="${ex.id}" ${disabled ? 'disabled' : ''}>${startLabel}</button>
       <div class="examBody hidden" data-body="${ex.id}"></div>
     </section>`;
   }).join('');
-  document.querySelectorAll('[data-start]').forEach(b => b.onclick = () => startExam(b.dataset.start));
+  document.querySelectorAll('[data-start]').forEach(b => b.onclick = () => {
+    if (!b.disabled) startExam(b.dataset.start);
+  });
 }
 
 function setupExamEditor(textarea, examId, taskIndex) {
