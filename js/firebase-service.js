@@ -21,7 +21,14 @@ async function init() {
   if (state) return state;
   const f = await loadModules();
   const app = f.initializeApp(firebaseConfig);
-  const auth = f.getAuth(app);
+  const auth = f.initializeAuth(app, {
+    persistence: [
+      f.indexedDBLocalPersistence,
+      f.browserLocalPersistence,
+      f.browserSessionPersistence
+    ],
+    popupRedirectResolver: f.browserPopupRedirectResolver
+  });
   const db = f.getDatabase(app);
   state = { f, app, auth, db };
   return state;
@@ -44,39 +51,14 @@ export async function signInStudentAnonymously() {
 export async function signInTeacherWithGoogle() {
   const s = await init();
   if (!s) throw new Error('A Firebase még nincs beállítva.');
-
-  // Egyes böngészők/adatvédelmi beállítások blokkolhatják a localStorage-t.
-  // Ilyenkor ne bukjon el a Google-belépés: próbáljunk session, majd memória alapú
-  // perzisztenciára visszaesni.
-  const persistences = [
-    s.f.browserLocalPersistence,
-    s.f.browserSessionPersistence,
-    s.f.inMemoryPersistence
-  ];
-  let persistenceError = null;
-  for (const persistence of persistences) {
-    try {
-      await s.f.setPersistence(s.auth, persistence);
-      persistenceError = null;
-      break;
-    } catch (err) {
-      persistenceError = err;
-    }
-  }
-
   const provider = new s.f.GoogleAuthProvider();
   provider.setCustomParameters({ prompt: 'select_account' });
-
-  try {
-    const result = await s.f.signInWithPopup(s.auth, provider);
-    return result.user;
-  } catch (err) {
-    if (persistenceError && !err.customData) err.customData = {};
-    if (persistenceError && err.customData && !err.customData.persistenceError) {
-      err.customData.persistenceError = String(persistenceError?.message || persistenceError);
-    }
-    throw err;
-  }
+  const result = await s.f.signInWithPopup(
+    s.auth,
+    provider,
+    s.f.browserPopupRedirectResolver
+  );
+  return result.user;
 }
 
 export async function signOutFirebase() {
