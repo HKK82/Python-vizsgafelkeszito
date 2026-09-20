@@ -21,6 +21,8 @@ def check_req(summary, r):
         return int(summary.get('calls', {}).get(name, 0)) >= minimum
     if typ == 'op':
         return int(summary.get('ops', {}).get(name, 0)) >= minimum
+    if typ == 'comparisons':
+        return comparison_count(summary) >= minimum
     if typ == 'rangeCondition':
         return int(summary.get('ops', {}).get('And', 0)) >= 1 or comparison_count(summary) >= 2
     if typ == 'listAdd':
