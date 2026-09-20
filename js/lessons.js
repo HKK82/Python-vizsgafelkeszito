@@ -82,7 +82,7 @@ print(varos)</code></pre>
     tasks: [
       {
         text: 'A program kérjen be <strong>egy darab nevet</strong> <code>input()</code>-tal, mentse a <code>nev</code> változóba, majd írja ki. Az automatikus ellenőrzés próbaként például a <code>Bence</code> nevet adja majd a programnak.',
-        starter: 'nev = input("Neved: ")\n',
+        starter: '',
         checks: [{ type: 'call', name: 'input', min: 1 }, { type: 'call', name: 'print', min: 1 }],
         tests: [{ inputs: ['Bence'], expectedLines: ['Bence'] }, { inputs: ['Anna'], expectedLines: ['Anna'] }],
         hints: ['Az <code>input()</code> eredménye már a <code>nev</code> változóban van.', 'A következő sorban írd ki a <code>nev</code> változót.'],
