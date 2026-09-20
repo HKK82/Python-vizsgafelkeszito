@@ -48,6 +48,18 @@ def validate_case(task, code):
         res = runner.test_function(code, t.get('functionName', ''), t.get('args', []))
         if not res.get('ok') or res.get('actual') != t.get('expected'):
             return False
+    for t in task.get('fileTests', []):
+        read_files = t.get('readFiles') or list((t.get('expectedFiles') or {}).keys())
+        res = runner.execute_code_with_files(code, t.get('inputs', []), t.get('files', {}), read_files)
+        if not res.get('ok'):
+            return False
+        if res.get('stdoutLines', []) != [str(x) for x in t.get('expectedLines', [])]:
+            return False
+        for name, expected in (t.get('expectedFiles') or {}).items():
+            actual = str((res.get('files') or {}).get(name, '')).replace('\r\n', '\n')
+            wanted = str(expected).replace('\r\n', '\n')
+            if actual != wanted:
+                return False
     return True
 
 
