@@ -53,6 +53,41 @@ function currentItem() {
   return items[currentIndex];
 }
 
+function microCoachText(lessonId) {
+  const tips = {
+    1: '<strong>Jegyezd meg:</strong> ha konkrét szöveget írsz ki, idézőjel kell: <code>print("Szia")</code>.',
+    2: '<strong>Nagyon fontos:</strong> a szöveg és a változó nem ugyanaz. <code>print("ram")</code> a „ram” szót írja ki, <code>print(ram)</code> pedig a <code>ram</code> változó értékét. Szöveges érték: <code>nev = "Anna"</code>; szám: <code>ram = 16</code>.',
+    3: '<strong>Jegyezd meg:</strong> az <code>input()</code> eredménye szöveg. Amit bekérsz, azt általában először változóba mented.',
+    4: '<strong>Jegyezd meg:</strong> <code>input()</code> → szöveg. Számoláshoz alakítsd át: <code>int(...)</code> vagy <code>float(...)</code>.',
+    5: '<strong>Előbb gondold ki a képletet:</strong> melyik értékből mit kell kivonni, összeadni, szorozni vagy osztani. Csak utána írd Pythonban.',
+    6: '<strong>Különbség:</strong> <code>%</code> a maradékot adja, <code>//</code> pedig az egész hányadost.',
+    7: '<strong>f-string:</strong> az idézőjel elé <code>f</code> kerül, a változó neve pedig kapcsos zárójelbe: <code>f"{nev}"</code>.',
+    8: '<strong>if:</strong> a feltétel végén kettőspont van, a hozzá tartozó utasítás pedig beljebb kezdődik.',
+    9: '<strong>Sorrend számít:</strong> <code>if</code> → <code>elif</code> → <code>else</code>. A szigorúbb határt vizsgáld előbb.',
+    10: '<strong>Összetett feltétel:</strong> <code>and</code> esetén minden részfeltételnek igaznak kell lennie; <code>or</code> esetén elég egynek.',
+    11: '<strong>Listaindex:</strong> az első elem indexe 0, nem 1. Például <code>lista[0]</code> az első elem.',
+    12: '<strong>Lista:</strong> <code>len(lista)</code> megszámolja az elemeket, <code>lista.append(x)</code> új elemet tesz a végére.',
+    13: '<strong>for:</strong> minden körben a lista következő elemét kapod meg. Ne kézzel írd ki ugyanazt többször.',
+    14: '<strong>range:</strong> a felső határ nem része a tartománynak: <code>range(1, 6)</code> → 1,2,3,4,5.',
+    15: '<strong>while:</strong> legyen olyan utasítás a ciklusban, amitől egyszer hamissá válik a feltétel, különben végtelen ciklus lesz.',
+    16: '<strong>Függvény:</strong> a paraméter bemenet a függvénynek, a <code>return</code> pedig visszaadja az eredményt. A <code>print()</code> és a <code>return</code> nem ugyanaz.'
+  };
+  return tips[lessonId] || '<strong>Tanulási szabály:</strong> először értsd meg, milyen adatod van, mit kell vele csinálni, és mi legyen az eredmény.';
+}
+
+function successCoachText(lessonId) {
+  const compact = {
+    1: 'Szép. A konkrét szöveg idézőjelben van.',
+    2: 'Jó. Figyeld továbbra is: idézőjelben szöveg van, idézőjel nélkül pedig a változó nevére hivatkozol.',
+    3: 'Jó. A bekért adatot változóban használtad tovább.',
+    4: 'Jó. Felismerted, mikor kell a szöveget számmá alakítani.',
+    7: 'Jó. Az f-stringben a változó kapcsos zárójelben szerepel.',
+    8: 'Jó. A feltétel és a behúzott blokk együtt működik.',
+    16: 'Jó. A függvény eredményét returnnel adtad vissza.'
+  };
+  return compact[lessonId] || 'Jó megoldás. Nézd meg, melyik tanult Python-eszköz végezte el a feladat lényegi részét.';
+}
+
 function setBusy(value, label = '') {
   busy = value;
   const disabled = value || !pythonReady;
@@ -134,12 +169,15 @@ function updateCloudStatus(status = {}) {
   if (status.connected) {
     el.textContent = `Óra: ${status.code} ✓`;
     el.className = 'runtime ready';
+    $('leaveClassBtn')?.classList.remove('hidden');
   } else if (status.error) {
     el.textContent = `Óra: ${status.error}`;
     el.className = 'runtime error';
+    $('leaveClassBtn')?.classList.add('hidden');
   } else {
     el.textContent = 'Óra: helyi mód';
     el.className = 'runtime';
+    $('leaveClassBtn')?.classList.add('hidden');
   }
 }
 tracker.onStatus = updateCloudStatus;
@@ -176,6 +214,7 @@ function renderTask() {
   $('lessonTitle').textContent = lesson.title;
   $('lessonObjective').textContent = lesson.objective;
   $('lessonExplain').innerHTML = lesson.explain;
+  $('microTip').innerHTML = `🧠 ${microCoachText(lesson.id)}`;
   $('taskCounter').textContent = `Feladat ${taskIndex + 1}/${lesson.tasks.length}`;
   $('taskText').innerHTML = task.text;
   $('codeEditor').value = store.getDraft(key, task.starter || '');
@@ -201,6 +240,7 @@ function renderTask() {
 
   $('messages').innerHTML = '';
   addTeacherMessage(`Most a(z) „${lesson.title}” témán dolgozunk. Először olvasd el, mi az új eszköz és mire használjuk, majd oldd meg a feladatot. A továbbhaladást a programtesztek döntik el.`);
+  addTeacherMessage(`🧠 Ezt jegyezd meg: ${htmlToText(microCoachText(lesson.id))}`);
   store.setLastViewed(currentIndex);
   tracker.record('activity');
   tracker.flush().catch(() => {});
@@ -394,6 +434,7 @@ async function checkTask() {
     const usedSolution = store.hasViewedSolution(key);
     showFeedback('ok', `<strong>✓ Helyes megoldás.</strong><br>${usedSolution ? 'A mintát már láttad, ezért a következő feladatnál próbáld teljesen önállóan.' : 'Működő kóddal bizonyítottad, hogy ezt a lépést érted.'}`);
     addTeacherMessage(usedSolution ? 'Sikerült. A következő feladat hasonló gondolkodást kér, de próbáld a mintamegoldás nélkül felépíteni.' : 'Nagyon jó. Nem csak azt mondtad, hogy érted: a programtesztek szerint működik a megoldásod. Mehetünk tovább.');
+    addTeacherMessage(`✅ ${successCoachText(currentItem().lesson.id)}`);
     tracker.flush().catch(() => {});
   } catch (err) {
     handleRunnerException(err);
@@ -572,6 +613,17 @@ async function begin(useAi) {
   tracker.flush().catch(() => {});
 }
 
+async function leaveClass() {
+  const code = sessionStorage.getItem(CLASS_CODE_KEY) || '';
+  if (!code && !tracker.classCode) return;
+  if (!confirm('Biztosan kilépsz az aktuális órából? A saját haladásod, jegyzeteid és API-kulcsod megmaradnak.')) return;
+  await tracker.leave();
+  sessionStorage.removeItem(CLASS_CODE_KEY);
+  $('classCodeInput').value = '';
+  updateCloudStatus();
+  openSetup();
+}
+
 function exportProgress() {
   const data = store.exportCurrent();
   if (!data) return;
@@ -629,6 +681,7 @@ function bootUi() {
     $('messages').innerHTML = '';
     addTeacherMessage('Az AI-beszélgetést töröltük. A feladatod és a haladásod megmaradt.');
   };
+  $('leaveClassBtn').onclick = () => leaveClass().catch(err => alert(err?.message || err));
   $('apiBtn').onclick = () => openSetup();
   $('newStudentBtn').onclick = () => openSetup({ newStudent: true });
   $('startBtn').onclick = () => begin(true);
