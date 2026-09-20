@@ -76,8 +76,8 @@ print(szerver)</code></pre>
     objective: 'Tudj adatot kérni a felhasználótól és változóba menteni.',
     explain: `
       <p>Az <code>input()</code> a felhasználótól kér be adatot. Az eredményt általában változóba mentjük.</p>
-      <pre><code>nev = input("Neved: ")
-print(nev)</code></pre>
+      <pre><code>varos = input("Város: ")
+print(varos)</code></pre>
       <p>Az <code>input()</code> eredménye mindig szöveg, vagyis <code>str</code>, amíg át nem alakítod.</p>`,
     tasks: [
       {
