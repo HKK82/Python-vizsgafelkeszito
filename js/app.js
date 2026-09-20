@@ -76,7 +76,19 @@ function microCoachText(lessonId) {
     13: '<strong>for:</strong> minden körben a lista következő elemét kapod meg. Ne kézzel írd ki ugyanazt többször.',
     14: '<strong>range:</strong> a felső határ nem része a tartománynak: <code>range(1, 6)</code> → 1,2,3,4,5.',
     15: '<strong>while:</strong> legyen olyan utasítás a ciklusban, amitől egyszer hamissá válik a feltétel, különben végtelen ciklus lesz.',
-    16: '<strong>Függvény:</strong> a paraméter bemenet a függvénynek, a <code>return</code> pedig visszaadja az eredményt. A <code>print()</code> és a <code>return</code> nem ugyanaz.'
+    16: '<strong>Függvény:</strong> a paraméter bemenet a függvénynek, a <code>return</code> pedig visszaadja az eredményt. A <code>print()</code> és a <code>return</code> nem ugyanaz.',
+    17: '<strong>Összegzés:</strong> indulj 0-ról, és a ciklusban mindig add hozzá az aktuális elemet.',
+    18: '<strong>Megszámlálás:</strong> a számláló csak akkor nő, ha az aktuális elem megfelel a feltételnek.',
+    19: '<strong>Minimum/maximum:</strong> biztonságos kezdés a lista első eleme, majd ciklusban hasonlíts.',
+    20: '<strong>Keresés/eldöntés:</strong> egy logikai változóval megjegyezheted, találtál-e megfelelő elemet.',
+    21: '<strong>Modul:</strong> először importálod, utána ponttal éred el az eszközeit, például <code>math.sqrt()</code>.',
+    22: '<strong>Fájlolvasás:</strong> <code>with open(..., "r")</code> után a fájlt soronként bejárhatod.',
+    23: '<strong>split():</strong> egy szöveges sort elválasztójel mentén listává bont.',
+    24: '<strong>Fájlírás:</strong> <code>"w"</code> módban írsz, a <code>write()</code> pedig nem tesz magától sortörést.',
+    25: '<strong>Osztály:</strong> az osztály tervrajz, az objektum pedig ebből létrehozott példány.',
+    26: '<strong>__init__ és self:</strong> a konstruktor az objektum létrehozásakor tölti fel a példány saját adatait.',
+    27: '<strong>Objektumlista:</strong> objektumokat ugyanúgy listába tehetsz és ciklussal bejárhatsz.',
+    28: '<strong>Komplex feladat:</strong> bontsd öt részre: beolvasás → feldolgozás → objektumlista → szűrés → fájlba írás.'
   };
   return tips[lessonId] || '<strong>Tanulási szabály:</strong> először értsd meg, milyen adatod van, mit kell vele csinálni, és mi legyen az eredmény.';
 }
@@ -98,7 +110,19 @@ function syntaxCheatText(lessonId) {
     13: '<code>for elem in lista:</code><br>&nbsp;&nbsp;&nbsp;&nbsp;<code>print(elem)</code>',
     14: '<code>for i in range(1, 6):</code><br>&nbsp;&nbsp;&nbsp;&nbsp;<code>print(i)</code>',
     15: '<code>while feltétel:</code><br>&nbsp;&nbsp;&nbsp;&nbsp;<code>...</code><br>&nbsp;&nbsp;&nbsp;&nbsp;<code>változás</code>',
-    16: '<code>def nev(parameter):</code><br>&nbsp;&nbsp;&nbsp;&nbsp;<code>return eredmeny</code>'
+    16: '<code>def nev(parameter):</code><br>&nbsp;&nbsp;&nbsp;&nbsp;<code>return eredmeny</code>',
+    17: '<code>osszeg = 0</code><br><code>for x in lista:</code><br>&nbsp;&nbsp;&nbsp;&nbsp;<code>osszeg += x</code>',
+    18: '<code>db = 0</code><br><code>if feltetel:</code><br>&nbsp;&nbsp;&nbsp;&nbsp;<code>db += 1</code>',
+    19: '<code>legnagyobb = lista[0]</code><br><code>if x &gt; legnagyobb:</code><br>&nbsp;&nbsp;&nbsp;&nbsp;<code>legnagyobb = x</code>',
+    20: '<code>talalt = False</code><br><code>if feltetel:</code><br>&nbsp;&nbsp;&nbsp;&nbsp;<code>talalt = True</code>',
+    21: '<code>import math</code><br><code>math.sqrt(25)</code><br><code>math.pi</code>',
+    22: '<code>with open("adatok.txt", "r", encoding="utf-8") as fajl:</code><br>&nbsp;&nbsp;&nbsp;&nbsp;<code>for sor in fajl:</code>',
+    23: '<code>adatok = sor.strip().split(";")</code><br><code>nev = adatok[0]</code>',
+    24: '<code>with open("eredmeny.txt", "w", encoding="utf-8") as fajl:</code><br>&nbsp;&nbsp;&nbsp;&nbsp;<code>fajl.write(szoveg + "\\n")</code>',
+    25: '<code>class Gep:</code><br>&nbsp;&nbsp;&nbsp;&nbsp;<code>tipus = "PC"</code>',
+    26: '<code>def __init__(self, nev):</code><br>&nbsp;&nbsp;&nbsp;&nbsp;<code>self.nev = nev</code>',
+    27: '<code>lista.append(Gep(...))</code><br><code>for gep in lista:</code>',
+    28: '<code>split()</code> + <code>osztály</code> + <code>append()</code> + <code>write()</code>'
   };
   return cheats[lessonId] || '';
 }
@@ -504,7 +528,7 @@ function nextTask() {
     return;
   }
   if (currentIndex >= items.length - 1) {
-    showFeedback('ok', '<strong>🎉 Az alapozó modul elkészült.</strong><br>Az öt kisvizsga és az alapozó leckék teljesítve vannak.');
+    showFeedback('ok', '<strong>🎉 A teljes Python tanulási modul elkészült.</strong><br>Az alapok, algoritmusok, fájlkezelés és objektumkezelés is teljesítve van.');
     return;
   }
   navigateTo(currentIndex + 1);
@@ -542,7 +566,7 @@ function requirementLabel(req) {
   if (req.type === 'listAdd') return 'lista bővítése';
   const map = {
     Assign: 'értékadás/változó', If: 'if feltétel', List: 'lista', Subscript: 'listaindexelés',
-    JoinedStr: 'f-string', For: 'for ciklus', While: 'while ciklus', Return: 'return',
+    JoinedStr: 'f-string', For: 'for ciklus', While: 'while ciklus', Return: 'return', Import: 'import', ClassDef: 'class/osztály', With: 'with blokk',
     Add: 'összeadás (+)', Sub: 'kivonás (-)', Mult: 'szorzás (*)', Div: 'osztás (/)',
     Mod: 'maradékos osztás (%)', FloorDiv: 'egész osztás (//)', And: 'and', Or: 'or'
   };
@@ -581,6 +605,7 @@ async function runManual() {
   if (busy || !pythonReady) return;
   tracker.record('runCount');
   const code = $('codeEditor').value;
+  const task = currentItem()?.task;
   let inputs = $('stdinBox').value === '' ? [] : $('stdinBox').value.split(/\r?\n/);
   let askedInteractively = false;
 
@@ -610,7 +635,10 @@ async function runManual() {
   setBusy(true, 'Futtatás…');
   $('output').textContent = 'Fut…';
   try {
-    const result = await runner.execute(code, inputs);
+    const fileSample = task?.fileTests?.[0];
+    const result = fileSample
+      ? await runner.executeWithFiles(code, inputs, fileSample.files || {}, fileSample.readFiles || Object.keys(fileSample.expectedFiles || {}))
+      : await runner.execute(code, inputs);
     if (inputs.length) {
       $('inputEchoWrap').classList.remove('hidden');
       $('inputEcho').textContent = result.inputsUsed?.join('\n') || inputs.join('\n');
@@ -628,7 +656,10 @@ async function runManual() {
       const inputNote = askedInteractively
         ? '<br><span class="tiny">A Futtatásnál a saját próbaadatoddal futott a program. Az Ellenőrzés külön rejtett tesztadatokkal is kipróbálja.</span>'
         : '';
-      showFeedback('info', `A kézi futtatás befejeződött. Ha késznek gondolod, kattints az <strong>Ellenőrzés</strong> gombra.${inputNote}`);
+      const fileNote = fileSample && result.files
+        ? '<br><span class="tiny">Létrehozott/ellenőrzött fájlok: ' + escapeHtml(Object.entries(result.files).map(([name, content]) => name + ': ' + JSON.stringify(content)).join(' | ')) + '</span>'
+        : '';
+      showFeedback('info', `A kézi futtatás befejeződött. Ha késznek gondolod, kattints az <strong>Ellenőrzés</strong> gombra.${inputNote}${fileNote}`);
     }
   } catch (err) {
     handleRunnerException(err);
@@ -716,6 +747,30 @@ async function checkTask() {
         const diagnostic = `Függvény: ${test.functionName}(${(test.args || []).join(', ')})\nVárt visszatérési érték: ${JSON.stringify(test.expected)}\nKapott érték: ${JSON.stringify(result.actual)}`;
         failedAttempt(`<strong>A függvény visszatérési értéke még nem jó.</strong><pre>${escapeHtml(diagnostic)}</pre>`, diagnostic);
         return;
+      }
+    }
+
+    for (const test of task.fileTests || []) {
+      const readFiles = test.readFiles || Object.keys(test.expectedFiles || {});
+      const result = await runner.executeWithFiles(code, test.inputs || [], test.files || {}, readFiles);
+      if (!result.ok) {
+        const diagnostic = formatError(result.error);
+        failedAttempt(`<strong>A fájlos teszt futás közben hibát talált.</strong><pre>${escapeHtml(diagnostic)}</pre>`, diagnostic);
+        return;
+      }
+      if (!equalLines(result.stdoutLines || [], test.expectedLines || [])) {
+        const diagnostic = formatTestDiagnostic(test.inputs || [], test.expectedLines || [], result.stdoutLines || []);
+        failedAttempt(`<strong>A fájlos feladat képernyőkimenete még nem jó.</strong><pre>${escapeHtml(diagnostic)}</pre>`, diagnostic);
+        return;
+      }
+      for (const [name, expected] of Object.entries(test.expectedFiles || {})) {
+        const actual = String(result.files?.[name] ?? '').replace(/\r\n/g, '\n');
+        const wanted = String(expected).replace(/\r\n/g, '\n');
+        if (actual !== wanted) {
+          const diagnostic = `Fájl: ${name}\nVárt tartalom:\n${wanted || '(üres fájl)'}\nKapott tartalom:\n${actual || '(nincs/üres)'}`;
+          failedAttempt(`<strong>A létrehozott fájl tartalma még nem megfelelő.</strong><pre>${escapeHtml(diagnostic)}</pre>`, diagnostic);
+          return;
+        }
       }
     }
 
