@@ -183,13 +183,17 @@ export class ProgressStore {
     const p = this.getCurrentProfile();
     if (!p) return;
     p.completed[taskKey] = true;
-    if (taskIndexGlobal >= p.frontier && p.frontier < totalTasks) {
-      while (p.frontier < totalTasks) {
-        const nextKey = this._taskKeyAtGlobalIndex(p.frontier);
-        if (!nextKey || !p.completed[nextKey]) break;
-        p.frontier += 1;
-      }
+
+    // Mindig újraszámoljuk az első még hiányzó feladatot. Így régi/migrált
+    // profilnál sem tud szétesni a "kész feladatok" és a továbblépési határ.
+    let frontier = 0;
+    while (frontier < totalTasks) {
+      const nextKey = this._taskKeyAtGlobalIndex(frontier);
+      if (!nextKey || !p.completed[nextKey]) break;
+      frontier += 1;
     }
+    p.frontier = frontier;
+
     p.updatedAt = new Date().toISOString();
     this.persist();
   }
@@ -229,6 +233,21 @@ export class ProgressStore {
 
   getFrontier(totalTasks) {
     return Math.min(this.getCurrentProfile()?.frontier || 0, totalTasks);
+  }
+
+  repairFrontier(totalTasks) {
+    const p = this.getCurrentProfile();
+    if (!p) return 0;
+    let frontier = 0;
+    while (frontier < totalTasks) {
+      const nextKey = this._taskKeyAtGlobalIndex(frontier);
+      if (!nextKey || !p.completed?.[nextKey]) break;
+      frontier += 1;
+    }
+    p.frontier = frontier;
+    p.updatedAt = new Date().toISOString();
+    this.persist();
+    return frontier;
   }
 
   resetCurrentProgress() {
