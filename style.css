@@ -141,3 +141,41 @@ h3 { font-size: 14px; color: #c9d7ee; margin: 0 0 6px; }
 .microTip strong{color:#fff1bb}
 .microTip code{color:#fff;background:#161a24;padding:1px 5px;border-radius:5px}
 .examModeTag{display:inline-flex;align-items:center;padding:5px 9px;border-radius:999px;background:#3a214d;border:1px solid #684086;color:#ead2ff;font-size:12px;font-weight:800;margin-left:6px}
+
+/* v5.1: leckenavigáció */
+.lessonNavigator{
+  display:grid;
+  grid-template-columns:auto minmax(220px,1fr) auto;
+  gap:9px;
+  align-items:center;
+  margin:4px 0 14px;
+  padding:10px 12px;
+  border:1px solid var(--line);
+  border-radius:11px;
+  background:#0e192c;
+}
+.lessonNavigator label{
+  color:var(--muted);
+  font-size:12px;
+  font-weight:800;
+}
+.lessonNavigator select{
+  width:100%;
+  min-width:0;
+  padding:9px 34px 9px 10px;
+  border-radius:9px;
+  border:1px solid #354b70;
+  background:#081220;
+  color:var(--text);
+  outline:none;
+  font:inherit;
+}
+.lessonNavigator select:focus{
+  border-color:#6998e8;
+  box-shadow:0 0 0 3px rgba(105,152,232,.12);
+}
+.lessonNavigator option:disabled{color:#71809b}
+@media(max-width:760px){
+  .lessonNavigator{grid-template-columns:1fr}
+  .lessonNavigator label{margin-bottom:-3px}
+}
