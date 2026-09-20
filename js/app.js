@@ -247,6 +247,7 @@ function renderLessonNavigator() {
   const select = $('lessonSelect');
   if (!select) return;
   const activeLessonIndex = currentItem()?.lessonIndex ?? 0;
+  select.innerHTML = '<option>Leckék betöltése…</option>';
   select.innerHTML = '';
   lessons.forEach((lesson, lessonIndex) => {
     const done = isLessonDone(lessonIndex);
