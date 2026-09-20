@@ -378,9 +378,13 @@ function renderTask() {
   $('completedBadge').classList.toggle('hidden', !completed);
   $('nextBtn').classList.toggle('hidden', !completed);
   const pendingCheckpoint = pendingCheckpointAfterCurrentLesson();
-  $('nextBtn').textContent = pendingCheckpoint
-    ? `Kisvizsga következik →`
-    : (currentIndex >= items.length - 1 ? 'Alapmodul kész ✓' : 'Következő feladat →');
+  const repairedFrontier = store.repairFrontier(totalTasks);
+  const hasEarlierGap = completed && repairedFrontier < currentIndex;
+  $('nextBtn').textContent = hasEarlierGap
+    ? 'Hiányzó feladathoz →'
+    : (pendingCheckpoint
+      ? 'Kisvizsga következik →'
+      : (currentIndex >= items.length - 1 ? 'Alapmodul kész ✓' : 'Következő feladat →'));
   $('prevBtn').disabled = currentIndex === 0;
 
   $('messages').innerHTML = '';
@@ -395,11 +399,32 @@ function renderTask() {
 }
 
 function navigateTo(index) {
-  const frontier = store.getFrontier(totalTasks);
+  const frontier = store.repairFrontier(totalTasks);
   const safeIndex = Math.max(0, Math.min(index, items.length - 1));
   const target = items[safeIndex];
-  if (safeIndex > frontier && !store.isCompleted(target.key)) return;
-  if (!store.isCompleted(target.key) && !checkpointAllowsLesson(target.lesson.id)) return;
+
+  if (safeIndex > frontier && !store.isCompleted(target.key)) {
+    const missingIndex = Math.min(frontier, items.length - 1);
+    const missing = items[missingIndex];
+    const current = currentItem();
+    if (current && $('codeEditor')) store.saveDraft(current.key, $('codeEditor').value);
+    currentIndex = missingIndex;
+    tracker.record('activity');
+    renderTask();
+    showFeedback(
+      'info',
+      `<strong>Előbb van egy befejezetlen feladat.</strong><br>
+      A rendszer visszavitt ide: <strong>${escapeHtml(missing.lesson.title)} – ${missing.taskIndex + 1}. feladat</strong>.
+      Ezt teljesítsd, utána megnyílik a továbblépés.`
+    );
+    return;
+  }
+
+  if (!store.isCompleted(target.key) && !checkpointAllowsLesson(target.lesson.id)) {
+    showFeedback('info', '<strong>A következő tananyagi blokk még zárva van.</strong><br>Előbb a kötelező kisvizsgát kell teljesíteni.');
+    return;
+  }
+
   const current = currentItem();
   if (current && $('codeEditor')) store.saveDraft(current.key, $('codeEditor').value);
   currentIndex = safeIndex;
@@ -844,7 +869,7 @@ async function begin(useAi) {
   lastAiAnswer = '';
   $('saveAiNoteBtn').disabled = true;
   $('saveAiNoteBtn').textContent = '📝 AI-magyarázatok automatikusan mentve a jegyzetbe';
-  const frontier = store.getFrontier(totalTasks);
+  const frontier = store.repairFrontier(totalTasks);
   const last = store.getLastViewed();
   currentIndex = Math.min(last, frontier >= totalTasks ? totalTasks - 1 : frontier);
 
