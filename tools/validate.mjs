@@ -49,7 +49,8 @@ const regressions = [
   ['sandbox: sys import tiltva', lessons[0].tasks[0], 'import sys\nprint("Szia, Python!")', false],
   ['sandbox: dunder attribútum tiltva', lessons[0].tasks[0], 'print((1).__class__)', false],
   ['sandbox: eval tiltva', lessons[0].tasks[0], 'print(eval("\\\"Szia, Python!\\\""))', false],
-  ['sandbox: math modul engedélyezett', lessons[0].tasks[0], 'import math\nprint("Szia, Python!")', true]
+  ['sandbox: math modul engedélyezett', lessons[0].tasks[0], 'import math\nprint("Szia, Python!")', true],
+  ['sandbox: html csomag engedélyezett', lessons[0].tasks[0], 'from html import escape\nprint("Szia, Python!")', true]
 ];
 for (const [name, task, code, expected] of regressions) {
   payloadCases.push({ task, code });
