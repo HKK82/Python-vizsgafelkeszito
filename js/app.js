@@ -335,21 +335,30 @@ async function runManual() {
   if (busy || !pythonReady) return;
   tracker.record('runCount');
   const code = $('codeEditor').value;
-  const task = currentItem()?.task;
   let inputs = $('stdinBox').value === '' ? [] : $('stdinBox').value.split(/\r?\n/);
-  let usedAutomaticInput = false;
+  let askedInteractively = false;
 
-  // Kezdőbarát kézi futtatás: ha a kód input()-ot használ, de a tanuló nem
-  // adott kézi próbaadatot, használjuk a feladathoz tartozó első tesztbemenetet.
+  // A Futtatás valódi gyakorlás: ha input() van a kódban és nincs előre
+  // megadott kézi bemenet, a tanulótól kérjük be a próbaérték(ek)et.
+  // Az automatikus tesztadatok (pl. Bence/Anna) csak az Ellenőrzésnél maradnak rejtve.
   if (!inputs.length && /\binput\s*\(/.test(code)) {
-    const sample = (task?.tests || []).find(t => Array.isArray(t.inputs) && t.inputs.length)?.inputs || [];
-    if (sample.length) {
-      inputs = [...sample].map(String);
-      usedAutomaticInput = true;
-    } else {
-      showFeedback('info', '<strong>A programod input()-ot használ.</strong><br>Nyisd le a „Bemeneti adatok kézi futtatáshoz” részt, és minden input()-hoz írj egy próbaértéket külön sorba.');
-      return;
+    const matches = [...code.matchAll(/\binput\s*\(\s*(?:["']([^"']*)["'])?\s*\)/g)];
+    const count = Math.max(1, matches.length);
+    const collected = [];
+    for (let i = 0; i < count; i += 1) {
+      const promptText = (matches[i]?.[1] || '').trim();
+      const label = promptText || `${i + 1}. bemeneti érték`;
+      const value = window.prompt(
+        `A program most input()-tal adatot kér.\n\n${label}\n\nÍrd be a saját próbaértékedet:`
+      );
+      if (value === null) {
+        showFeedback('info', 'A futtatást megszakítottad. Nem adtam automatikus tesztadatot a programnak.');
+        return;
+      }
+      collected.push(value);
     }
+    inputs = collected;
+    askedInteractively = true;
   }
 
   setBusy(true, 'Futtatás…');
@@ -370,10 +379,10 @@ async function runManual() {
       autoExplainFailure('kézi futtatás', diagnostic);
     } else {
       $('output').textContent = result.stdoutLines?.join('\n') || '(nincs kimenet)';
-      const autoNote = usedAutomaticInput
-        ? `<br><span class="tiny">A kézi futtatáshoz automatikusan ezt a próba-bemenetet használtam: <strong>${escapeHtml(inputs.join(' | '))}</strong>.</span>`
+      const inputNote = askedInteractively
+        ? '<br><span class="tiny">A Futtatásnál a saját próbaadatoddal futott a program. Az Ellenőrzés külön rejtett tesztadatokkal is kipróbálja.</span>'
         : '';
-      showFeedback('info', `A kézi futtatás befejeződött. Ha késznek gondolod, kattints az <strong>Ellenőrzés</strong> gombra.${autoNote}`);
+      showFeedback('info', `A kézi futtatás befejeződött. Ha késznek gondolod, kattints az <strong>Ellenőrzés</strong> gombra.${inputNote}`);
     }
   } catch (err) {
     handleRunnerException(err);
