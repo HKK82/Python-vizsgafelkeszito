@@ -44,8 +44,38 @@ export const checkpoints = [
     examId: 'checkpoint-5',
     title: 'Kisvizsga 5 – range, while, függvények',
     afterLesson: 16,
-    nextLesson: null,
+    nextLesson: 17,
     lessonIds: [14, 15, 16],
+    passPct: 80,
+    minTaskPct: 60
+  },
+  {
+    id: 'checkpoint-6',
+    examId: 'checkpoint-6',
+    title: 'Kisvizsga 6 – Algoritmusok',
+    afterLesson: 20,
+    nextLesson: 21,
+    lessonIds: [17, 18, 19, 20],
+    passPct: 80,
+    minTaskPct: 60
+  },
+  {
+    id: 'checkpoint-7',
+    examId: 'checkpoint-7',
+    title: 'Kisvizsga 7 – Modulok és fájlkezelés',
+    afterLesson: 24,
+    nextLesson: 25,
+    lessonIds: [21, 22, 23, 24],
+    passPct: 80,
+    minTaskPct: 60
+  },
+  {
+    id: 'checkpoint-8',
+    examId: 'checkpoint-8',
+    title: 'Kisvizsga 8 – Osztályok és objektumok',
+    afterLesson: 28,
+    nextLesson: null,
+    lessonIds: [25, 26, 27, 28],
     passPct: 80,
     minTaskPct: 60
   }
