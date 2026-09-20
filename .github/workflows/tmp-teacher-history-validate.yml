@@ -1,0 +1,25 @@
+name: Temporary teacher history validation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/tmp-teacher-history-validate.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: JavaScript syntax
+        run: |
+          node --check js/firebase-service.js
+          node --check js/teacher.js
+      - name: Full validator
+        run: node tools/validate.mjs
