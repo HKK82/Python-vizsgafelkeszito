@@ -650,6 +650,471 @@ print(osszeg(12, 8))</code></pre>
         solution: 'def paros(szam):\n    return szam % 2 == 0'
       }
     ]
+  },
+  {
+    id: 17,
+    title: 'Összegzés – akkumulátor változó',
+    objective: 'Tudj listaelemeket ciklussal összegezni egy gyűjtőváltozóban.',
+    explain: `
+      <p>Összegzésnél létrehozunk egy kezdetben 0 értékű változót, majd a ciklusban minden elemet hozzáadunk.</p>
+      <pre><code>ertekek = [3, 5, 2]
+osszeg = 0
+for ertek in ertekek:
+    osszeg += ertek
+print(osszeg)</code></pre>`,
+    tasks: [
+      {
+        text: 'Add össze ciklussal a <code>[4, 7, 2]</code> lista elemeit, majd írd ki az összeget.',
+        starter: 'szamok = [4, 7, 2]\n',
+        checks: [{ type:'node', name:'For', min:1 }, { type:'op', name:'Add', min:1 }],
+        tests: [{ inputs:[], expectedLines:['13'] }],
+        hints: ['Kezdj egy <code>osszeg = 0</code> változóval.', 'A ciklusban add hozzá az aktuális elemet.'],
+        solution: 'szamok = [4, 7, 2]\nosszeg = 0\nfor szam in szamok:\n    osszeg += szam\nprint(osszeg)'
+      },
+      {
+        text: 'A <code>[10, 20, 5, 15]</code> értékeket ciklussal összegezve írd ki az eredményt.',
+        starter: 'ertekek = [10, 20, 5, 15]\n',
+        checks: [{ type:'node', name:'For', min:1 }, { type:'op', name:'Add', min:1 }],
+        tests: [{ inputs:[], expectedLines:['50'] }],
+        hints: ['Az összegző változó 0-ról indul.', 'A ciklus után írd ki az összeget.'],
+        solution: 'ertekek = [10, 20, 5, 15]\nosszeg = 0\nfor ertek in ertekek:\n    osszeg += ertek\nprint(osszeg)'
+      },
+      {
+        text: 'Önállóan: add össze ciklussal a <code>[6, -2, 8, 3]</code> elemeit, és csak a végeredményt írd ki.',
+        starter: 'ertekek = [6, -2, 8, 3]\n',
+        checks: [{ type:'node', name:'For', min:1 }, { type:'op', name:'Add', min:1 }],
+        tests: [{ inputs:[], expectedLines:['15'] }],
+        hints: ['Használj összegző változót.', 'Ne kézzel számold ki az eredményt.'],
+        solution: 'ertekek = [6, -2, 8, 3]\nosszeg = 0\nfor ertek in ertekek:\n    osszeg += ertek\nprint(osszeg)'
+      }
+    ]
+  },
+  {
+    id: 18,
+    title: 'Megszámlálás – hány elem felel meg?',
+    objective: 'Tudj feltételnek megfelelő elemeket megszámolni ciklussal.',
+    explain: `
+      <p>Megszámlálásnál egy számláló 0-ról indul. Ha egy elem megfelel a feltételnek, a számlálót 1-gyel növeljük.</p>
+      <pre><code>db = 0
+for ertek in ertekek:
+    if ertek >= 90:
+        db += 1
+print(db)</code></pre>`,
+    tasks: [
+      {
+        text: 'Számold meg, hány érték legalább 90 a <code>[95, 70, 91, 20]</code> listában.',
+        starter: 'ertekek = [95, 70, 91, 20]\n',
+        checks: [{ type:'node', name:'For', min:1 }, { type:'node', name:'If', min:1 }],
+        tests: [{ inputs:[], expectedLines:['2'] }],
+        hints: ['A számláló 0-ról indul.', 'Csak igaz feltételnél növeld.'],
+        solution: 'ertekek = [95, 70, 91, 20]\ndb = 0\nfor ertek in ertekek:\n    if ertek >= 90:\n        db += 1\nprint(db)'
+      },
+      {
+        text: 'Számold meg a páros számokat a <code>[2, 7, 8, 11, 14]</code> listában.',
+        starter: 'szamok = [2, 7, 8, 11, 14]\n',
+        checks: [{ type:'node', name:'For', min:1 }, { type:'node', name:'If', min:1 }, { type:'op', name:'Mod', min:1 }],
+        tests: [{ inputs:[], expectedLines:['3'] }],
+        hints: ['Páros, ha <code>szam % 2 == 0</code>.', 'Találatnál növeld a számlálót.'],
+        solution: 'szamok = [2, 7, 8, 11, 14]\ndb = 0\nfor szam in szamok:\n    if szam % 2 == 0:\n        db += 1\nprint(db)'
+      },
+      {
+        text: 'Önállóan: számold meg, hány 50-nél kisebb érték van a <code>[12, 80, 49, 50, 3]</code> listában.',
+        starter: 'ertekek = [12, 80, 49, 50, 3]\n',
+        checks: [{ type:'node', name:'For', min:1 }, { type:'node', name:'If', min:1 }],
+        tests: [{ inputs:[], expectedLines:['3'] }],
+        hints: ['A feltétel most <code>&lt; 50</code>.', 'A számlálót csak találatnál növeld.'],
+        solution: 'ertekek = [12, 80, 49, 50, 3]\ndb = 0\nfor ertek in ertekek:\n    if ertek < 50:\n        db += 1\nprint(db)'
+      }
+    ]
+  },
+  {
+    id: 19,
+    title: 'Minimum és maximum – szélsőérték keresése',
+    objective: 'Tudj ciklussal legkisebb vagy legnagyobb elemet keresni.',
+    explain: `
+      <p>Szélsőérték-keresésnél az első elemből indulunk, majd minden további elemmel összehasonlítjuk.</p>
+      <pre><code>legnagyobb = ertekek[0]
+for ertek in ertekek:
+    if ertek > legnagyobb:
+        legnagyobb = ertek</code></pre>`,
+    tasks: [
+      {
+        text: 'Keresd meg ciklussal a legnagyobb értéket a <code>[30, 95, 72, 88]</code> listában.',
+        starter: 'ertekek = [30, 95, 72, 88]\n',
+        checks: [{ type:'node', name:'For', min:1 }, { type:'node', name:'If', min:1 }],
+        tests: [{ inputs:[], expectedLines:['95'] }],
+        hints: ['Indulj a lista első eleméből.', 'Nagyobb elemnél cseréld le a tárolt maximumot.'],
+        solution: 'ertekek = [30, 95, 72, 88]\nlegnagyobb = ertekek[0]\nfor ertek in ertekek:\n    if ertek > legnagyobb:\n        legnagyobb = ertek\nprint(legnagyobb)'
+      },
+      {
+        text: 'Keresd meg ciklussal a legkisebb értéket a <code>[8, 3, 11, -2, 5]</code> listában.',
+        starter: 'ertekek = [8, 3, 11, -2, 5]\n',
+        checks: [{ type:'node', name:'For', min:1 }, { type:'node', name:'If', min:1 }],
+        tests: [{ inputs:[], expectedLines:['-2'] }],
+        hints: ['A minimum is indulhat az első elemből.', 'Kisebb elemnél frissítsd a változót.'],
+        solution: 'ertekek = [8, 3, 11, -2, 5]\nlegkisebb = ertekek[0]\nfor ertek in ertekek:\n    if ertek < legkisebb:\n        legkisebb = ertek\nprint(legkisebb)'
+      },
+      {
+        text: 'Önállóan: írd ki a <code>[45, 12, 99, 67, 5]</code> lista legnagyobb és legkisebb elemét két külön sorba, ciklusos kereséssel.',
+        starter: 'ertekek = [45, 12, 99, 67, 5]\n',
+        checks: [{ type:'node', name:'For', min:1 }, { type:'node', name:'If', min:2 }],
+        tests: [{ inputs:[], expectedLines:['99','5'] }],
+        hints: ['Két változót vezess: minimum és maximum.', 'Mindkettőt az első elemből indíthatod.'],
+        solution: 'ertekek = [45, 12, 99, 67, 5]\nlegnagyobb = ertekek[0]\nlegkisebb = ertekek[0]\nfor ertek in ertekek:\n    if ertek > legnagyobb:\n        legnagyobb = ertek\n    if ertek < legkisebb:\n        legkisebb = ertek\nprint(legnagyobb)\nprint(legkisebb)'
+      }
+    ]
+  },
+  {
+    id: 20,
+    title: 'Keresés és eldöntés – van ilyen elem?',
+    objective: 'Tudj eldönteni egy listáról, hogy tartalmaz-e adott feltételnek megfelelő elemet.',
+    explain: `
+      <p>Eldöntésnél gyakran egy logikai változóval jegyezzük meg, találtunk-e megfelelő elemet.</p>
+      <pre><code>talalt = False
+for ertek in ertekek:
+    if ertek >= 90:
+        talalt = True
+print(talalt)</code></pre>`,
+    tasks: [
+      {
+        text: 'Döntsd el ciklussal, van-e legalább 90-es érték a <code>[20, 70, 95, 40]</code> listában. <code>True</code> vagy <code>False</code> legyen a kimenet.',
+        starter: 'ertekek = [20, 70, 95, 40]\n',
+        checks: [{ type:'node', name:'For', min:1 }, { type:'node', name:'If', min:1 }],
+        tests: [{ inputs:[], expectedLines:['True'] }],
+        hints: ['Indulj <code>False</code> értékkel.', 'Találatnál állítsd <code>True</code>-ra.'],
+        solution: 'ertekek = [20, 70, 95, 40]\ntalalt = False\nfor ertek in ertekek:\n    if ertek >= 90:\n        talalt = True\nprint(talalt)'
+      },
+      {
+        text: 'Döntsd el, szerepel-e a <code>"DB03"</code> név a <code>["SRV01", "WEB02", "DB03"]</code> listában ciklussal.',
+        starter: 'nevek = ["SRV01", "WEB02", "DB03"]\n',
+        checks: [{ type:'node', name:'For', min:1 }, { type:'node', name:'If', min:1 }],
+        tests: [{ inputs:[], expectedLines:['True'] }],
+        hints: ['Hasonlítsd az aktuális nevet a keresett névhez.', 'Találatnál legyen igaz a logikai változó.'],
+        solution: 'nevek = ["SRV01", "WEB02", "DB03"]\ntalalt = False\nfor nev in nevek:\n    if nev == "DB03":\n        talalt = True\nprint(talalt)'
+      },
+      {
+        text: 'Önállóan: döntsd el, van-e 0-nál kisebb szám a <code>[4, 2, 0, 9]</code> listában.',
+        starter: 'szamok = [4, 2, 0, 9]\n',
+        checks: [{ type:'node', name:'For', min:1 }, { type:'node', name:'If', min:1 }],
+        tests: [{ inputs:[], expectedLines:['False'] }],
+        hints: ['A keresett feltétel: <code>szam &lt; 0</code>.', 'A kezdeti érték legyen <code>False</code>.'],
+        solution: 'szamok = [4, 2, 0, 9]\ntalalt = False\nfor szam in szamok:\n    if szam < 0:\n        talalt = True\nprint(talalt)'
+      }
+    ]
+  },
+  {
+    id: 21,
+    title: 'Modulok – import és math',
+    objective: 'Tudj egy beépített modult importálni és annak függvényét használni.',
+    explain: `
+      <p>A modul kész eszközöket tartalmaz. A <code>math</code> modul matematikai függvényeket és konstansokat ad.</p>
+      <pre><code>import math
+print(math.sqrt(25))</code></pre>
+      <p>Ebben a böngészős gyakorlóban biztonsági okból az oktatáshoz szükséges modulokat engedjük.</p>`,
+    tasks: [
+      {
+        text: 'Importáld a <code>math</code> modult, és írd ki a 81 négyzetgyökét.',
+        starter: '',
+        checks: [{ type:'node', name:'Import', min:1 }, { type:'call', name:'sqrt', min:1 }],
+        tests: [{ inputs:[], expectedLines:['9.0'] }],
+        hints: ['Először <code>import math</code>.', 'A négyzetgyök: <code>math.sqrt(...)</code>.'],
+        solution: 'import math\nprint(math.sqrt(81))'
+      },
+      {
+        text: 'Importáld a <code>math</code> modult, és írd ki a <code>math.pi</code> értékét két tizedesre formázva.',
+        starter: '',
+        checks: [{ type:'node', name:'Import', min:1 }, { type:'node', name:'JoinedStr', min:1 }],
+        tests: [{ inputs:[], expectedLines:['3.14'] }],
+        hints: ['Használd a <code>math.pi</code> értéket.', 'F-stringben a <code>:.2f</code> két tizedesre formáz.'],
+        solution: 'import math\nprint(f"{math.pi:.2f}")'
+      },
+      {
+        text: 'Önállóan: kérj be egy sugarat tizedes számként, és a <code>math.pi</code> segítségével írd ki a kör területét két tizedesre.',
+        starter: '',
+        checks: [{ type:'node', name:'Import', min:1 }, { type:'call', name:'float', min:1 }, { type:'op', name:'Mult', min:1 }],
+        tests: [{ inputs:['2'], expectedLines:['12.57'] }, { inputs:['1'], expectedLines:['3.14'] }],
+        hints: ['Terület: <code>pi * r * r</code>.', 'A végeredményt formázd két tizedesre.'],
+        solution: 'import math\nr = float(input("Sugár: "))\nterulet = math.pi * r * r\nprint(f"{terulet:.2f}")'
+      }
+    ]
+  },
+  {
+    id: 22,
+    title: 'Fájlbeolvasás – open() és sorok',
+    objective: 'Tudj szövegfájlt megnyitni és soronként beolvasni.',
+    explain: `
+      <p>Fájlt a <code>with open(...)</code> szerkezettel nyitunk meg. Az <code>"r"</code> olvasást jelent.</p>
+      <pre><code>with open("adatok.txt", "r", encoding="utf-8") as fajl:
+    for sor in fajl:
+        print(sor.strip())</code></pre>
+      <p>A <code>strip()</code> eltávolítja a sorvégi sortörést.</p>`,
+    tasks: [
+      {
+        text: 'Olvasd be soronként a <code>nevek.txt</code> fájlt, és írd ki a sorokat sortörés-duplázás nélkül.',
+        starter: '',
+        checks: [{ type:'call', name:'open', min:1 }, { type:'node', name:'For', min:1 }, { type:'call', name:'strip', min:1 }],
+        fileTests: [{ files:{'nevek.txt':'Anna\nBence\n'}, readFiles:[], expectedFiles:{}, expectedLines:['Anna','Bence'] }],
+        hints: ['Használj <code>with open("nevek.txt", "r", encoding="utf-8") as fajl:</code> szerkezetet.', 'A kiírás előtt használd a <code>strip()</code>-ot.'],
+        solution: 'with open("nevek.txt", "r", encoding="utf-8") as fajl:\n    for sor in fajl:\n        print(sor.strip())'
+      },
+      {
+        text: 'A <code>szamok.txt</code> minden sora egy egész szám. Olvasd be és írd ki a számok összegét.',
+        starter: '',
+        checks: [{ type:'call', name:'open', min:1 }, { type:'node', name:'For', min:1 }, { type:'call', name:'int', min:1 }],
+        fileTests: [
+          { files:{'szamok.txt':'10\n20\n5\n'}, readFiles:[], expectedFiles:{}, expectedLines:['35'] },
+          { files:{'szamok.txt':'-2\n7\n'}, readFiles:[], expectedFiles:{}, expectedLines:['5'] }
+        ],
+        hints: ['A sor szöveg, ezért alakítsd <code>int()</code>-té.', 'Használj összegző változót.'],
+        solution: 'osszeg = 0\nwith open("szamok.txt", "r", encoding="utf-8") as fajl:\n    for sor in fajl:\n        osszeg += int(sor.strip())\nprint(osszeg)'
+      },
+      {
+        text: 'Önállóan: a <code>cpu.txt</code> soronként egész CPU-értékeket tartalmaz. Számold meg, hány érték legalább 90, és csak a darabszámot írd ki.',
+        starter: '',
+        checks: [{ type:'call', name:'open', min:1 }, { type:'node', name:'For', min:1 }, { type:'node', name:'If', min:1 }],
+        fileTests: [
+          { files:{'cpu.txt':'95\n70\n91\n20\n'}, readFiles:[], expectedFiles:{}, expectedLines:['2'] },
+          { files:{'cpu.txt':'10\n89\n90\n'}, readFiles:[], expectedFiles:{}, expectedLines:['1'] }
+        ],
+        hints: ['Minden sort alakíts egész számmá.', 'A korábbi megszámlálási algoritmust használd.'],
+        solution: 'db = 0\nwith open("cpu.txt", "r", encoding="utf-8") as fajl:\n    for sor in fajl:\n        ertek = int(sor.strip())\n        if ertek >= 90:\n            db += 1\nprint(db)'
+      }
+    ]
+  },
+  {
+    id: 23,
+    title: 'split() – összetett fájlsor feldolgozása',
+    objective: 'Tudj elválasztójel mentén mezőkre bontani egy szöveges sort.',
+    explain: `
+      <p>A <code>split(";")</code> a pontosvesszőknél darabolja fel a szöveget.</p>
+      <pre><code>sor = "SRV01;95"
+adatok = sor.split(";")
+nev = adatok[0]
+terheles = int(adatok[1])</code></pre>`,
+    tasks: [
+      {
+        text: 'A <code>szerverek.txt</code> sorai <code>név;terhelés</code> formájúak. Írd ki minden sorból csak a szerver nevét.',
+        starter: '',
+        checks: [{ type:'call', name:'open', min:1 }, { type:'call', name:'split', min:1 }, { type:'node', name:'For', min:1 }],
+        fileTests: [{ files:{'szerverek.txt':'SRV01;95\nWEB02;72\n'}, readFiles:[], expectedFiles:{}, expectedLines:['SRV01','WEB02'] }],
+        hints: ['Előbb <code>strip()</code>, utána <code>split(";")</code>.', 'A név a 0. indexű mező.'],
+        solution: 'with open("szerverek.txt", "r", encoding="utf-8") as fajl:\n    for sor in fajl:\n        adatok = sor.strip().split(";")\n        print(adatok[0])'
+      },
+      {
+        text: 'A <code>szerverek.txt</code> sorai <code>név;terhelés</code> formájúak. Írd ki csak a legalább 90-es terhelésű szerverek nevét.',
+        starter: '',
+        checks: [{ type:'call', name:'split', min:1 }, { type:'node', name:'If', min:1 }, { type:'call', name:'int', min:1 }],
+        fileTests: [{ files:{'szerverek.txt':'SRV01;95\nWEB02;72\nDB03;91\n'}, readFiles:[], expectedFiles:{}, expectedLines:['SRV01','DB03'] }],
+        hints: ['A második mezőt alakítsd egész számmá.', 'Csak megfelelő terhelésnél írj ki.'],
+        solution: 'with open("szerverek.txt", "r", encoding="utf-8") as fajl:\n    for sor in fajl:\n        adatok = sor.strip().split(";")\n        nev = adatok[0]\n        terheles = int(adatok[1])\n        if terheles >= 90:\n            print(nev)'
+      },
+      {
+        text: 'Önállóan: a <code>gepek.txt</code> sorai <code>név;ram</code> formájúak. Számold meg, hány gép RAM-ja legalább 16, és írd ki a darabszámot.',
+        starter: '',
+        checks: [{ type:'call', name:'open', min:1 }, { type:'call', name:'split', min:1 }, { type:'node', name:'If', min:1 }],
+        fileTests: [
+          { files:{'gepek.txt':'PC01;8\nPC02;16\nPC03;32\n'}, readFiles:[], expectedFiles:{}, expectedLines:['2'] },
+          { files:{'gepek.txt':'A;4\nB;8\n'}, readFiles:[], expectedFiles:{}, expectedLines:['0'] }
+        ],
+        hints: ['Bontsd ketté a sort pontosvesszőnél.', 'A RAM mezőt <code>int()</code>-té kell alakítani.'],
+        solution: 'db = 0\nwith open("gepek.txt", "r", encoding="utf-8") as fajl:\n    for sor in fajl:\n        adatok = sor.strip().split(";")\n        ram = int(adatok[1])\n        if ram >= 16:\n            db += 1\nprint(db)'
+      }
+    ]
+  },
+  {
+    id: 24,
+    title: 'Fájlba írás – write() és kimeneti fájl',
+    objective: 'Tudj új szövegfájlt létrehozni és sorokat beleírni.',
+    explain: `
+      <p>Az <code>"w"</code> mód új fájlt hoz létre vagy felülírja a régit. A <code>write()</code> nem tesz automatikusan sortörést, ezért gyakran <code>\n</code>-t írunk a végére.</p>
+      <pre><code>with open("eredmeny.txt", "w", encoding="utf-8") as fajl:
+    fajl.write("Első sor\\n")
+    fajl.write("Második sor\\n")</code></pre>`,
+    tasks: [
+      {
+        text: 'Hozd létre az <code>eredmeny.txt</code> fájlt, és írd bele két sorba: <code>OK</code> és <code>KESZ</code>.',
+        starter: '',
+        checks: [{ type:'call', name:'open', min:1 }, { type:'call', name:'write', min:2 }],
+        fileTests: [{ files:{}, readFiles:['eredmeny.txt'], expectedFiles:{'eredmeny.txt':'OK\nKESZ\n'}, expectedLines:[] }],
+        hints: ['Megnyitásnál használd a <code>"w"</code> módot.', 'Minden kiírt sor végére kell <code>\\n</code>.'],
+        solution: 'with open("eredmeny.txt", "w", encoding="utf-8") as fajl:\n    fajl.write("OK\\n")\n    fajl.write("KESZ\\n")'
+      },
+      {
+        text: 'A <code>nevek = ["Anna", "Bence", "Csilla"]</code> lista minden elemét írd külön sorba a <code>nevek.txt</code> fájlba.',
+        starter: 'nevek = ["Anna", "Bence", "Csilla"]\n',
+        checks: [{ type:'call', name:'open', min:1 }, { type:'call', name:'write', min:1 }, { type:'node', name:'For', min:1 }],
+        fileTests: [{ files:{}, readFiles:['nevek.txt'], expectedFiles:{'nevek.txt':'Anna\nBence\nCsilla\n'}, expectedLines:[] }],
+        hints: ['A cikluson belül használd a <code>write()</code>-ot.', 'Az elem után fűzz <code>\\n</code>-t.'],
+        solution: 'nevek = ["Anna", "Bence", "Csilla"]\nwith open("nevek.txt", "w", encoding="utf-8") as fajl:\n    for nev in nevek:\n        fajl.write(nev + "\\n")'
+      },
+      {
+        text: 'Önállóan: olvasd be a <code>cpu.txt</code> egész értékeit, és csak a legalább 90-es értékeket írd soronként a <code>kritikus.txt</code> fájlba.',
+        starter: '',
+        checks: [{ type:'call', name:'open', min:2 }, { type:'call', name:'write', min:1 }, { type:'node', name:'If', min:1 }],
+        fileTests: [
+          { files:{'cpu.txt':'95\n70\n91\n20\n'}, readFiles:['kritikus.txt'], expectedFiles:{'kritikus.txt':'95\n91\n'}, expectedLines:[] },
+          { files:{'cpu.txt':'20\n30\n'}, readFiles:['kritikus.txt'], expectedFiles:{'kritikus.txt':''}, expectedLines:[] }
+        ],
+        hints: ['Egy fájlt olvasásra, egyet írásra nyiss meg.', 'Csak a feltételnek megfelelő értéket írd ki.'],
+        solution: 'with open("cpu.txt", "r", encoding="utf-8") as be:\n    with open("kritikus.txt", "w", encoding="utf-8") as ki:\n        for sor in be:\n            ertek = int(sor.strip())\n            if ertek >= 90:\n                ki.write(str(ertek) + "\\n")'
+      }
+    ]
+  },
+  {
+    id: 25,
+    title: 'class – saját adattípus',
+    objective: 'Értsd az osztály és az objektumpéldány alapját.',
+    explain: `
+      <p>Az osztály egy saját adattípus tervrajza. Az osztályból objektumpéldányt hozunk létre.</p>
+      <pre><code>class Gep:
+    tipus = "PC"
+
+gep = Gep()
+print(gep.tipus)</code></pre>`,
+    tasks: [
+      {
+        text: 'Készíts <code>Szerver</code> osztályt, benne <code>tipus = "szerver"</code> osztályattribútummal. Hozz létre egy példányt, és írd ki a <code>tipus</code> értékét.',
+        starter: '',
+        checks: [{ type:'node', name:'ClassDef', min:1 }],
+        tests: [{ inputs:[], expectedLines:['szerver'] }],
+        hints: ['Az osztály neve <code>class Szerver:</code>.', 'Példány: <code>s = Szerver()</code>.'],
+        solution: 'class Szerver:\n    tipus = "szerver"\n\ns = Szerver()\nprint(s.tipus)'
+      },
+      {
+        text: 'Készíts <code>Gep</code> osztályt <code>allapot = "OK"</code> attribútummal, majd két külön példányból írd ki az állapotot.',
+        starter: '',
+        checks: [{ type:'node', name:'ClassDef', min:1 }],
+        tests: [{ inputs:[], expectedLines:['OK','OK'] }],
+        hints: ['Ugyanabból az osztályból több példány is készülhet.', 'Mindkét példány eléri az attribútumot.'],
+        solution: 'class Gep:\n    allapot = "OK"\n\na = Gep()\nb = Gep()\nprint(a.allapot)\nprint(b.allapot)'
+      },
+      {
+        text: 'Önállóan: készíts <code>Eszkoz</code> osztályt <code>aktiv = True</code> attribútummal, hozz létre egy példányt, és írd ki az értéket.',
+        starter: '',
+        checks: [{ type:'node', name:'ClassDef', min:1 }],
+        tests: [{ inputs:[], expectedLines:['True'] }],
+        hints: ['A <code>True</code> logikai érték, nem szöveg.', 'Az attribútumot ponttal éred el.'],
+        solution: 'class Eszkoz:\n    aktiv = True\n\ne = Eszkoz()\nprint(e.aktiv)'
+      }
+    ]
+  },
+  {
+    id: 26,
+    title: '__init__ és self – példányadatok',
+    objective: 'Tudj konstruktorral objektumpéldányonként külön adatokat tárolni.',
+    explain: `
+      <p>Az <code>__init__</code> az objektum létrehozásakor fut le. A <code>self</code> az éppen létrehozott példányra hivatkozik.</p>
+      <pre><code>class Gep:
+    def __init__(self, nev, ram):
+        self.nev = nev
+        self.ram = ram</code></pre>`,
+    tasks: [
+      {
+        text: 'Készíts <code>Gep</code> osztályt <code>nev</code> attribútummal. A konstruktor kapja meg a nevet. Hozz létre <code>Gep("PC01")</code> példányt, és írd ki a nevét.',
+        starter: 'class Gep:\n    ',
+        checks: [{ type:'node', name:'ClassDef', min:1 }, { type:'function', name:'__init__', minArgs:2 }],
+        tests: [{ inputs:[], expectedLines:['PC01'] }],
+        hints: ['A konstruktor: <code>def __init__(self, nev):</code>.', 'Tárolás: <code>self.nev = nev</code>.'],
+        solution: 'class Gep:\n    def __init__(self, nev):\n        self.nev = nev\n\ngep = Gep("PC01")\nprint(gep.nev)'
+      },
+      {
+        text: 'Készíts <code>Gep</code> osztályt <code>nev</code> és <code>ram</code> attribútummal. Hozz létre <code>Gep("PC02", 16)</code> példányt, majd írd ki két külön sorba az adatokat.',
+        starter: '',
+        checks: [{ type:'node', name:'ClassDef', min:1 }, { type:'function', name:'__init__', minArgs:3 }],
+        tests: [{ inputs:[], expectedLines:['PC02','16'] }],
+        hints: ['Két paramétert ments két <code>self.</code> attribútumba.', 'A példány létrehozásakor add át mindkét értéket.'],
+        solution: 'class Gep:\n    def __init__(self, nev, ram):\n        self.nev = nev\n        self.ram = ram\n\ngep = Gep("PC02", 16)\nprint(gep.nev)\nprint(gep.ram)'
+      },
+      {
+        text: 'Önállóan: készíts <code>Szerver</code> osztályt <code>nev</code> és <code>terheles</code> attribútummal. Hozz létre <code>Szerver("SRV01", 95)</code> példányt, majd írd ki két sorban a két értéket.',
+        starter: '',
+        checks: [{ type:'node', name:'ClassDef', min:1 }, { type:'function', name:'__init__', minArgs:3 }],
+        tests: [{ inputs:[], expectedLines:['SRV01','95'] }],
+        hints: ['A konstruktor három paramétert lát: <code>self</code>, név, terhelés.', 'Az adatokat <code>self.nev</code> és <code>self.terheles</code> néven tárold.'],
+        solution: 'class Szerver:\n    def __init__(self, nev, terheles):\n        self.nev = nev\n        self.terheles = terheles\n\ns = Szerver("SRV01", 95)\nprint(s.nev)\nprint(s.terheles)'
+      }
+    ]
+  },
+  {
+    id: 27,
+    title: 'Objektumlista – több példány kezelése',
+    objective: 'Tudj objektumokat listában tárolni és ciklussal feldolgozni.',
+    explain: `
+      <p>Az objektumok ugyanúgy listába tehetők, mint a számok vagy szövegek.</p>
+      <pre><code>gepek = []
+gepek.append(Gep("PC01", 8))
+gepek.append(Gep("PC02", 16))
+for gep in gepek:
+    print(gep.nev)</code></pre>`,
+    tasks: [
+      {
+        text: 'A megadott <code>Gep</code> osztályból készíts két objektumot, tedd listába, és ciklussal írd ki a nevüket.',
+        starter: 'class Gep:\n    def __init__(self, nev):\n        self.nev = nev\n\n',
+        checks: [{ type:'node', name:'For', min:1 }, { type:'node', name:'List', min:1 }],
+        tests: [{ inputs:[], expectedLines:['PC01','PC02'] }],
+        hints: ['Készíts listát két <code>Gep(...)</code> példánnyal.', 'A ciklusban <code>gep.nev</code> kell.'],
+        solution: 'class Gep:\n    def __init__(self, nev):\n        self.nev = nev\n\ngepek = [Gep("PC01"), Gep("PC02")]\nfor gep in gepek:\n    print(gep.nev)'
+      },
+      {
+        text: 'Készíts két <code>Szerver</code> objektumot 95 és 70 terheléssel. Listából ciklussal csak a legalább 90-es szerver nevét írd ki.',
+        starter: '',
+        checks: [{ type:'node', name:'ClassDef', min:1 }, { type:'node', name:'For', min:1 }, { type:'node', name:'If', min:1 }],
+        tests: [{ inputs:[], expectedLines:['SRV01'] }],
+        hints: ['Az objektumokat tedd közös listába.', 'A feltételben az objektum <code>terheles</code> attribútumát vizsgáld.'],
+        solution: 'class Szerver:\n    def __init__(self, nev, terheles):\n        self.nev = nev\n        self.terheles = terheles\n\nszerverek = [Szerver("SRV01", 95), Szerver("WEB02", 70)]\nfor szerver in szerverek:\n    if szerver.terheles >= 90:\n        print(szerver.nev)'
+      },
+      {
+        text: 'Önállóan: hozz létre három <code>Gep</code> objektumot 8, 16 és 32 GB RAM-mal. Tedd őket listába, és írd ki a legalább 16 GB-os gépek nevét.',
+        starter: '',
+        checks: [{ type:'node', name:'ClassDef', min:1 }, { type:'node', name:'For', min:1 }, { type:'node', name:'If', min:1 }],
+        tests: [{ inputs:[], expectedLines:['PC02','PC03'] }],
+        hints: ['A konstruktorban legyen név és RAM.', 'A ciklusban <code>gep.ram >= 16</code> feltétel kell.'],
+        solution: 'class Gep:\n    def __init__(self, nev, ram):\n        self.nev = nev\n        self.ram = ram\n\ngepek = [Gep("PC01", 8), Gep("PC02", 16), Gep("PC03", 32)]\nfor gep in gepek:\n    if gep.ram >= 16:\n        print(gep.nev)'
+      }
+    ]
+  },
+  {
+    id: 28,
+    title: 'Komplex feldolgozás – fájl → objektum → kimeneti fájl',
+    objective: 'Tudd összekapcsolni a fájlbeolvasást, split()-et, objektumokat, szűrést és fájlba írást.',
+    explain: `
+      <p>Ez már vizsgaszerű összetett feladat: fájlból adatot olvasunk, objektumokat készítünk, feltétel alapján kiválogatunk, majd eredményt írunk fájlba.</p>
+      <pre><code>adatok = sor.strip().split(";")
+objektum = Szerver(adatok[0], int(adatok[1]))
+szerverek.append(objektum)</code></pre>
+      <p>Mindig bontsd részekre: 1. beolvasás, 2. feldolgozás, 3. objektumlista, 4. szűrés, 5. kiírás.</p>`,
+    tasks: [
+      {
+        text: 'A <code>szerverek.txt</code> <code>név;terhelés</code> sorait töltsd <code>Szerver</code> objektumok listájába, majd írd ki minden objektum nevét.',
+        starter: '',
+        checks: [{ type:'node', name:'ClassDef', min:1 }, { type:'call', name:'open', min:1 }, { type:'call', name:'split', min:1 }, { type:'call', name:'append', min:1 }],
+        fileTests: [{ files:{'szerverek.txt':'SRV01;95\nWEB02;72\n'}, readFiles:[], expectedFiles:{}, expectedLines:['SRV01','WEB02'] }],
+        hints: ['Először definiáld az osztályt.', 'Minden fájlsorból készíts egy objektumot és appendeld a listához.'],
+        solution: 'class Szerver:\n    def __init__(self, nev, terheles):\n        self.nev = nev\n        self.terheles = terheles\n\nszerverek = []\nwith open("szerverek.txt", "r", encoding="utf-8") as fajl:\n    for sor in fajl:\n        adatok = sor.strip().split(";")\n        szerverek.append(Szerver(adatok[0], int(adatok[1])))\nfor szerver in szerverek:\n    print(szerver.nev)'
+      },
+      {
+        text: 'A <code>szerverek.txt</code> adatait töltsd objektumokba, majd számold meg és írd ki, hány szerver terhelése legalább 90.',
+        starter: '',
+        checks: [{ type:'node', name:'ClassDef', min:1 }, { type:'call', name:'open', min:1 }, { type:'node', name:'If', min:1 }],
+        fileTests: [
+          { files:{'szerverek.txt':'SRV01;95\nWEB02;72\nDB03;91\n'}, readFiles:[], expectedFiles:{}, expectedLines:['2'] },
+          { files:{'szerverek.txt':'A;10\nB;20\n'}, readFiles:[], expectedFiles:{}, expectedLines:['0'] }
+        ],
+        hints: ['A beolvasott objektumokat listában tartsd.', 'Utána a korábbi megszámlálási algoritmust alkalmazd az attribútumra.'],
+        solution: 'class Szerver:\n    def __init__(self, nev, terheles):\n        self.nev = nev\n        self.terheles = terheles\n\nszerverek = []\nwith open("szerverek.txt", "r", encoding="utf-8") as fajl:\n    for sor in fajl:\n        adatok = sor.strip().split(";")\n        szerverek.append(Szerver(adatok[0], int(adatok[1])))\ndb = 0\nfor szerver in szerverek:\n    if szerver.terheles >= 90:\n        db += 1\nprint(db)'
+      },
+      {
+        text: 'Önálló vizsgaszerű feladat: a <code>szerverek.txt</code> <code>név;terhelés</code> sorait töltsd <code>Szerver</code> objektumokba. A legalább 90%-os szerverek nevét írd soronként a <code>kritikus.txt</code> fájlba, végül írd ki a darabszámukat.',
+        starter: '',
+        checks: [{ type:'node', name:'ClassDef', min:1 }, { type:'function', name:'__init__', minArgs:3 }, { type:'call', name:'open', min:2 }, { type:'call', name:'split', min:1 }, { type:'call', name:'write', min:1 }],
+        fileTests: [
+          { files:{'szerverek.txt':'SRV01;95\nWEB02;72\nDB03;91\n'}, readFiles:['kritikus.txt'], expectedFiles:{'kritikus.txt':'SRV01\nDB03\n'}, expectedLines:['2'] },
+          { files:{'szerverek.txt':'A;20\nB;90\nC;89\nD;100\n'}, readFiles:['kritikus.txt'], expectedFiles:{'kritikus.txt':'B\nD\n'}, expectedLines:['2'] }
+        ],
+        hints: ['Először csak töltsd fel az objektumlistát, utána külön szűrj és írj fájlba.', 'A darabszámot a kiírás közben is növelheted.'],
+        solution: 'class Szerver:\n    def __init__(self, nev, terheles):\n        self.nev = nev\n        self.terheles = terheles\n\nszerverek = []\nwith open("szerverek.txt", "r", encoding="utf-8") as fajl:\n    for sor in fajl:\n        adatok = sor.strip().split(";")\n        szerverek.append(Szerver(adatok[0], int(adatok[1])))\ndb = 0\nwith open("kritikus.txt", "w", encoding="utf-8") as ki:\n    for szerver in szerverek:\n        if szerver.terheles >= 90:\n            ki.write(szerver.nev + "\\n")\n            db += 1\nprint(db)'
+      }
+    ]
   }
 ];
 
