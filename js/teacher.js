@@ -169,6 +169,323 @@ function renderStats() {
     <div class="statTile"><span class="tiny">Vizsgapróbálkozások</span><strong>${examCount}</strong></div>`;
 }
 
+
+function clampPct(value) {
+  return Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
+}
+
+function ratioPct(a, b) {
+  const den = Number(b) || 0;
+  return den > 0 ? clampPct((Number(a) || 0) / den * 100) : 0;
+}
+
+function reportStudentKey(student) {
+  return String(student?.name || 'Tanuló').trim().toLocaleLowerCase('hu-HU');
+}
+
+function anonymizedStudentLabel(student, index = 0) {
+  return `Tanuló ${index + 1}`;
+}
+
+function latestAttemptsByExam(student) {
+  const byExam = new Map();
+  const sorted = [...(student.examAttempts || [])]
+    .sort((a, b) => (Number(a.submittedAt) || 0) - (Number(b.submittedAt) || 0));
+  for (const attempt of sorted) {
+    const key = String(attempt.examId || attempt.examTitle || 'vizsga');
+    byExam.set(key, attempt);
+  }
+  return [...byExam.values()].sort((a, b) =>
+    String(a.examTitle || a.examId || '').localeCompare(String(b.examTitle || b.examId || ''), 'hu')
+  );
+}
+
+function bestAttemptsByExam(student) {
+  const byExam = new Map();
+  for (const attempt of student.examAttempts || []) {
+    const key = String(attempt.examId || attempt.examTitle || 'vizsga');
+    const prev = byExam.get(key);
+    if (!prev || (Number(attempt.pct) || 0) > (Number(prev.pct) || 0)) byExam.set(key, attempt);
+  }
+  return [...byExam.values()];
+}
+
+function learningObservation(student) {
+  const checks = Number(student.checkCount) || 0;
+  const successes = Number(student.successfulChecks) || 0;
+  const hints = (Number(student.localHints) || 0) + (Number(student.aiHints) || 0) + (Number(student.aiQuestions) || 0);
+  const checkSuccess = ratioPct(successes, checks);
+  const helpPerSuccess = successes > 0 ? hints / successes : hints;
+  const totalObserved = (Number(student.activeSeconds) || 0) + (Number(student.idleSeconds) || 0) + (Number(student.hiddenSeconds) || 0);
+  const activeShare = totalObserved > 0 ? ratioPct(student.activeSeconds, totalObserved) : 0;
+
+  const parts = [];
+  if (checks >= 3) {
+    if (checkSuccess >= 75) parts.push('Az ellenőrzések nagy része sikeres volt; az aktuális órán viszonylag stabil önálló feladatmegoldás látszik.');
+    else if (checkSuccess >= 45) parts.push('Az ellenőrzések között több javítási kör is megjelent; a tanuló próbálkozással jut el a helyes megoldásokhoz.');
+    else parts.push('Az ellenőrzésekhez sok javítási kör társult; az adott témákban több célzott gyakorlás indokolt.');
+  } else {
+    parts.push('Még kevés ellenőrzési adat áll rendelkezésre ahhoz, hogy az önállóságról erős következtetést lehessen levonni.');
+  }
+
+  if (hints === 0 && successes > 0) parts.push('A rögzített sikeres feladatokhoz nem használt helyi vagy AI-segítséget.');
+  else if (successes > 0 && helpPerSuccess <= 0.5) parts.push('A segítség használata mérsékelt volt a sikeres megoldások számához képest.');
+  else if (hints > 0) parts.push('Többször használt helyi vagy AI-segítséget; érdemes figyelni, mely témáknál jelenik meg rendszeresen ez az igény.');
+
+  if (totalObserved >= 300) {
+    if (activeShare >= 70) parts.push('A megfigyelt idő nagyobb részében aktív munkavégzés történt.');
+    else if (activeShare >= 45) parts.push('Az aktív munkavégzés mellett számottevő inaktív vagy háttérben töltött idő is megjelent.');
+    else parts.push('A megfigyelt idő jelentős részében nem aktív munkavégzés látszott; ezt érdemes az órai körülményekkel együtt értelmezni.');
+  }
+  return parts;
+}
+
+function examStrengthsAndFocus(student) {
+  const latest = latestAttemptsByExam(student);
+  if (!latest.length) return {
+    strengths: ['Még nincs elegendő vizsgaadat konkrét tématerületi erősség megnevezéséhez.'],
+    focus: ['A további kisvizsgák eredményei alapján lesz pontosabban meghatározható a fejlesztési irány.']
+  };
+
+  const scored = latest
+    .map(a => ({ title: a.examTitle || a.examId || 'Vizsga', pct: clampPct(a.pct) }))
+    .sort((a, b) => b.pct - a.pct);
+  const strengths = scored.filter(x => x.pct >= 80).slice(0, 3)
+    .map(x => `${x.title}: ${x.pct}% – stabilabb teljesítmény.`);
+  const focus = [...scored].sort((a, b) => a.pct - b.pct).filter(x => x.pct < 80).slice(0, 3)
+    .map(x => `${x.title}: ${x.pct}% – további gyakorlás javasolt.`);
+
+  return {
+    strengths: strengths.length ? strengths : ['A vizsgaeredmények alapján még nincs 80% feletti, egyértelműen stabil tématerület.'],
+    focus: focus.length ? focus : ['A jelenlegi vizsgaeredmények alapján nincs 80% alatti kiemelt fejlesztendő vizsgaterület.']
+  };
+}
+
+function reportExamRows(student) {
+  const latest = latestAttemptsByExam(student);
+  if (!latest.length) return '<tr><td colspan="5" class="muted">Még nincs naplózott vizsgaeredmény.</td></tr>';
+  return latest.map(a => {
+    const attemptsForExam = (student.examAttempts || []).filter(x =>
+      String(x.examId || x.examTitle || 'vizsga') === String(a.examId || a.examTitle || 'vizsga')
+    ).length;
+    const best = bestAttemptsByExam(student).find(x =>
+      String(x.examId || x.examTitle || 'vizsga') === String(a.examId || a.examTitle || 'vizsga')
+    );
+    return `<tr>
+      <td>${esc(a.examTitle || a.examId || 'Vizsga')}</td>
+      <td>${examKindText(a.examKind)}</td>
+      <td>${clampPct(a.pct)}%</td>
+      <td>${best ? clampPct(best.pct) + '%' : '–'}</td>
+      <td>${attemptsForExam}</td>
+    </tr>`;
+  }).join('');
+}
+
+function buildStudentReportHtml(student, anonymize = false) {
+  const all = mergedStudents().sort((a,b) => String(a.name || '').localeCompare(String(b.name || ''), 'hu'));
+  const index = Math.max(0, all.findIndex(s => reportStudentKey(s) === reportStudentKey(student)));
+  const label = anonymize ? anonymizedStudentLabel(student, index) : (student.name || 'Tanuló');
+  const progress = clampPct(student.progressPct);
+  const attempts = student.examAttempts || [];
+  const latest = latestAttemptsByExam(student);
+  const avgExam = latest.length
+    ? Math.round(latest.reduce((sum, a) => sum + clampPct(a.pct), 0) / latest.length)
+    : null;
+  const successfulExamCount = latest.filter(a => typeof a.passed === 'boolean' ? a.passed : clampPct(a.pct) >= 80).length;
+  const helpCount = (Number(student.localHints) || 0) + (Number(student.aiHints) || 0) + (Number(student.aiQuestions) || 0);
+  const observation = learningObservation(student);
+  const sf = examStrengthsAndFocus(student);
+
+  return `
+    <article class="reportSheet">
+      <div class="reportHeader">
+        <div>
+          <div class="reportKicker">PEDAGÓGIAI TANULÓI RIPORT</div>
+          <h1>${esc(label)}</h1>
+          <div class="muted">${esc(meta?.title || 'Python óra')} • ${esc(currentCode || '')} • ${new Date().toLocaleDateString('hu-HU')}</div>
+        </div>
+        <div class="reportBadge">aktuális óra</div>
+      </div>
+
+      <div class="reportSummaryGrid">
+        <div><span>Haladás</span><strong>${Number(student.completedTasks) || 0}/${Number(student.totalTasks) || 0}</strong><small>${progress}%</small></div>
+        <div><span>Aktív idő</span><strong>${mins(student.activeSeconds)} perc</strong><small>megfigyelt órai aktivitás</small></div>
+        <div><span>Sikeres ellenőrzés</span><strong>${Number(student.successfulChecks) || 0}</strong><small>${Number(student.checkCount) || 0} ellenőrzésből</small></div>
+        <div><span>Segítséghasználat</span><strong>${helpCount}</strong><small>helyi tipp + AI</small></div>
+        <div><span>Vizsgák átlaga</span><strong>${avgExam === null ? '–' : avgExam + '%'}</strong><small>${latest.length} külön vizsga</small></div>
+        <div><span>Teljesített vizsgák</span><strong>${successfulExamCount}</strong><small>${attempts.length} összes próbálkozás</small></div>
+      </div>
+
+      <section class="reportSection">
+        <h2>Jelenlegi helyzet</h2>
+        <p>A tanuló jelenleg a(z) <strong>${esc(student.currentLessonTitle || '–')}</strong> témánál tart${student.currentTaskNumber ? `, a ${Number(student.currentTaskNumber)}. feladaton` : ''}. A rögzített haladás ${progress}%.</p>
+      </section>
+
+      <section class="reportSection">
+        <h2>Megfigyelhető tanulási minta</h2>
+        <ul>${observation.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+      </section>
+
+      <div class="reportTwoCol">
+        <section class="reportSection">
+          <h2>Erősségek</h2>
+          <ul>${sf.strengths.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+        </section>
+        <section class="reportSection">
+          <h2>Fejlesztendő / következő fókusz</h2>
+          <ul>${sf.focus.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+        </section>
+      </div>
+
+      <section class="reportSection">
+        <h2>Vizsgaeredmények</h2>
+        <table class="reportTable">
+          <thead><tr><th>Vizsga</th><th>Típus</th><th>Legutóbbi</th><th>Legjobb</th><th>Próbák</th></tr></thead>
+          <tbody>${reportExamRows(student)}</tbody>
+        </table>
+      </section>
+
+      <section class="reportSection reportNote">
+        <h2>Értelmezési megjegyzés</h2>
+        <p>Ez a riport az aktuális órához rögzített haladási, aktivitási és vizsga-metaadatokból készült. Nem diagnosztikai eszköz, és nem következtet egészségi, pszichológiai vagy gyógypedagógiai állapotra. Az inaktív/háttéridőt mindig az órai körülményekkel együtt kell értelmezni.</p>
+      </section>
+    </article>`;
+}
+
+function latestPerStudentExam() {
+  const map = new Map();
+  for (const student of mergedStudents()) {
+    for (const attempt of student.examAttempts || []) {
+      const examKey = String(attempt.examId || attempt.examTitle || 'vizsga');
+      const key = `${reportStudentKey(student)}|${examKey}`;
+      const prev = map.get(key);
+      if (!prev || (Number(attempt.submittedAt) || 0) > (Number(prev.attempt.submittedAt) || 0)) {
+        map.set(key, { student, attempt });
+      }
+    }
+  }
+  return [...map.values()];
+}
+
+function buildGroupReportHtml(anonymize = false) {
+  const group = mergedStudents().sort((a,b) => String(a.name || '').localeCompare(String(b.name || ''), 'hu'));
+  const avgProgress = group.length ? Math.round(group.reduce((s,x) => s + clampPct(x.progressPct), 0) / group.length) : 0;
+  const totalActive = group.reduce((s,x) => s + mins(x.activeSeconds), 0);
+  const totalChecks = group.reduce((s,x) => s + (Number(x.checkCount) || 0), 0);
+  const totalSuccess = group.reduce((s,x) => s + (Number(x.successfulChecks) || 0), 0);
+  const latestPairs = latestPerStudentExam();
+
+  const examGroups = new Map();
+  for (const { student, attempt } of latestPairs) {
+    const key = String(attempt.examId || attempt.examTitle || 'vizsga');
+    if (!examGroups.has(key)) examGroups.set(key, []);
+    examGroups.get(key).push({ student, attempt });
+  }
+  const examRows = [...examGroups.values()].map(rows => {
+    const title = rows[0]?.attempt?.examTitle || rows[0]?.attempt?.examId || 'Vizsga';
+    const avg = Math.round(rows.reduce((s,r) => s + clampPct(r.attempt.pct), 0) / rows.length);
+    const passed = rows.filter(r => typeof r.attempt.passed === 'boolean' ? r.attempt.passed : clampPct(r.attempt.pct) >= 80).length;
+    return { title, avg, attempted: rows.length, passed };
+  }).sort((a,b) => a.avg - b.avg);
+
+  const support = examRows.filter(x => x.avg < 75).slice(0,4);
+  const strong = [...examRows].sort((a,b) => b.avg - a.avg).filter(x => x.avg >= 80).slice(0,4);
+  const studentRows = group.map((s,i) => {
+    const label = anonymize ? anonymizedStudentLabel(s,i) : (s.name || 'Tanuló');
+    const latest = latestAttemptsByExam(s);
+    const avg = latest.length ? Math.round(latest.reduce((sum,a)=>sum+clampPct(a.pct),0)/latest.length) : null;
+    const help = (Number(s.localHints)||0)+(Number(s.aiHints)||0)+(Number(s.aiQuestions)||0);
+    return `<tr>
+      <td>${esc(label)}</td>
+      <td>${clampPct(s.progressPct)}%</td>
+      <td>${mins(s.activeSeconds)} p</td>
+      <td>${Number(s.successfulChecks)||0}/${Number(s.checkCount)||0}</td>
+      <td>${help}</td>
+      <td>${avg === null ? '–' : avg + '%'}</td>
+    </tr>`;
+  }).join('');
+
+  return `
+    <article class="reportSheet">
+      <div class="reportHeader">
+        <div>
+          <div class="reportKicker">CSOPORTSZINTŰ PEDAGÓGIAI RIPORT</div>
+          <h1>${esc(meta?.title || 'Python óra')}</h1>
+          <div class="muted">${esc(currentCode || '')} • ${new Date().toLocaleDateString('hu-HU')}</div>
+        </div>
+        <div class="reportBadge">${group.length} tanuló</div>
+      </div>
+
+      <div class="reportSummaryGrid">
+        <div><span>Tanulók</span><strong>${group.length}</strong><small>aktuális órában</small></div>
+        <div><span>Átlagos haladás</span><strong>${avgProgress}%</strong><small>teljes tananyaghoz képest</small></div>
+        <div><span>Összes aktív idő</span><strong>${totalActive} perc</strong><small>csoportszinten</small></div>
+        <div><span>Sikeres ellenőrzések</span><strong>${totalSuccess}</strong><small>${totalChecks} ellenőrzésből</small></div>
+      </div>
+
+      <div class="reportTwoCol">
+        <section class="reportSection">
+          <h2>Csoportszintű erősségek</h2>
+          <ul>${(strong.length ? strong.map(x => `${x.title}: ${x.avg}% csoportátlag (${x.attempted} tanuló).`) : ['Még nincs elegendő vizsgaadat 80% feletti közös erősség azonosításához.']).map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+        </section>
+        <section class="reportSection">
+          <h2>Közös fejlesztési fókusz</h2>
+          <ul>${(support.length ? support.map(x => `${x.title}: ${x.avg}% csoportátlag; ${x.passed}/${x.attempted} tanuló teljesítette a küszöböt.`) : ['A jelenlegi vizsgaadatok alapján nincs 75% alatti kiemelt közös vizsgaterület.']).map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+        </section>
+      </div>
+
+      <section class="reportSection">
+        <h2>Tanulói áttekintés</h2>
+        <table class="reportTable">
+          <thead><tr><th>Azonosító</th><th>Haladás</th><th>Aktív idő</th><th>Siker/ellenőrzés</th><th>Segítség</th><th>Vizsgaátlag</th></tr></thead>
+          <tbody>${studentRows || '<tr><td colspan="6" class="muted">Még nincs tanulói adat.</td></tr>'}</tbody>
+        </table>
+      </section>
+
+      <section class="reportSection reportNote">
+        <h2>Értelmezési megjegyzés</h2>
+        <p>A csoport riport az aktuális órához rögzített adatok összesítése. Nem diagnosztikai értékelés. Az eredmények elsősorban arra alkalmasak, hogy látható legyen, mely tananyagrészeknél érdemes közösen visszagyakorolni, és mely tanulóknál szükséges több egyéni támogatás.</p>
+      </section>
+    </article>`;
+}
+
+function refreshReportStudentOptions() {
+  const select = $('reportStudentSelect');
+  if (!select) return;
+  const previous = select.value;
+  const rows = mergedStudents().sort((a,b) => String(a.name || '').localeCompare(String(b.name || ''), 'hu'));
+  select.innerHTML = '<option value="">Válassz tanulót…</option>' + rows.map(s =>
+    `<option value="${esc(reportStudentKey(s))}">${esc(s.name || 'Tanuló')}</option>`
+  ).join('');
+  if (rows.some(s => reportStudentKey(s) === previous)) select.value = previous;
+}
+
+function showStudentReport() {
+  const key = $('reportStudentSelect')?.value || '';
+  if (!key) {
+    alert('Válassz tanulót az egyéni riporthoz.');
+    return;
+  }
+  const student = mergedStudents().find(s => reportStudentKey(s) === key);
+  if (!student) return;
+  $('reportPrintArea').innerHTML = buildStudentReportHtml(student, !!$('reportAnonymize')?.checked);
+  $('printReportBtn').disabled = false;
+  $('reportPrintArea').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function showGroupReport() {
+  $('reportPrintArea').innerHTML = buildGroupReportHtml(!!$('reportAnonymize')?.checked);
+  $('printReportBtn').disabled = false;
+  $('reportPrintArea').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function printCurrentReport() {
+  if ($('printReportBtn')?.disabled) return;
+  document.body.classList.add('printingReport');
+  window.print();
+  setTimeout(() => document.body.classList.remove('printingReport'), 300);
+}
+
 function renderRows() {
   const rows = mergedStudents().sort((a, b) => (a.name || '').localeCompare(b.name || '', 'hu'));
   $('studentRows').innerHTML = rows.length ? rows.map(s => {
@@ -194,6 +511,7 @@ function renderRows() {
   $('lastUpdate').textContent = `Frissítve: ${new Date().toLocaleTimeString('hu-HU')}`;
   renderStats();
   renderExamAttempts();
+  refreshReportStudentOptions();
 }
 
 function renderMeta() {
@@ -389,6 +707,10 @@ $('toggleClassBtn').onclick = async () => {
 };
 $('csvBtn').onclick = exportCsv;
 $('examCsvBtn').onclick = exportExamCsv;
+$('studentReportBtn').onclick = showStudentReport;
+$('groupReportBtn').onclick = showGroupReport;
+$('printReportBtn').onclick = printCurrentReport;
+window.addEventListener('afterprint', () => document.body.classList.remove('printingReport'));
 $('lessonTestBtn').onclick = () => {
   if (!user) return;
   localStorage.setItem(TEACHER_TEST_AUTH_KEY, String(Date.now() + TEACHER_TEST_TTL_MS));
