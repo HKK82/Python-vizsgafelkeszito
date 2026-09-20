@@ -135,3 +135,9 @@ h3 { font-size: 14px; color: #c9d7ee; margin: 0 0 6px; }
 .teacherHero{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.classCodeBig{font-size:30px;font-weight:900;letter-spacing:3px;color:#bcd4ff}
 .dashboardTableWrap{overflow:auto}.dashboardTable{width:100%;border-collapse:collapse;min-width:980px}.dashboardTable th,.dashboardTable td{padding:10px;border-bottom:1px solid var(--line);text-align:left;font-size:13px}.dashboardTable th{position:sticky;top:0;background:#101a2e;color:#c9d8f0}.statusDot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}.status-active{background:#61d69b}.status-idle{background:#ffd166}.status-background{background:#ff9f6e}.status-offline{background:#71809b}.statTiles{display:grid;grid-template-columns:repeat(5,minmax(120px,1fr));gap:10px}.statTile{padding:12px;background:#101c32;border:1px solid var(--line);border-radius:10px}.statTile strong{display:block;font-size:22px}.privacyNote{padding:11px 13px;background:#10283a;border:1px solid #24506c;border-radius:10px;color:#cfe8f8}.warningNote{padding:11px 13px;background:#342a12;border:1px solid #66541d;border-radius:10px;color:#ffe8a6}
 @media(max-width:980px){.topbar{gap:10px;flex-wrap:wrap}.topNav{order:3;width:100%}.pageGrid{grid-template-columns:1fr}.statTiles{grid-template-columns:repeat(2,1fr)}.teacherControls{grid-template-columns:1fr}.requirementRow{grid-template-columns:1fr}}
+
+/* v5: szájbarágós mikro-tippek és vizsgamód */
+.microTip{margin:12px 0 4px;padding:13px 14px;border-radius:11px;background:#2a2412;border:1px solid #67551d;color:#ffe9a6;line-height:1.5}
+.microTip strong{color:#fff1bb}
+.microTip code{color:#fff;background:#161a24;padding:1px 5px;border-radius:5px}
+.examModeTag{display:inline-flex;align-items:center;padding:5px 9px;border-radius:999px;background:#3a214d;border:1px solid #684086;color:#ead2ff;font-size:12px;font-weight:800;margin-left:6px}
