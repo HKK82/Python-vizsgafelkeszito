@@ -1,4 +1,7 @@
+import { checkpointExams } from './checkpoint-exams.js';
+
 export const exams = [
+  ...checkpointExams,
   {
     id: 'alapok',
     title: 'Részvizsga 1 – Python alapok',
