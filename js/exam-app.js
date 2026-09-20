@@ -1,15 +1,18 @@
 import { exams } from './exams.js';
 import { flattenTasks, totalTasks } from './lessons.js';
-import { ProgressStore } from './storage.js';
+import { ProgressStore, getStoredApiKey } from './storage.js';
 import { PythonRunner } from './python-runner.js';
 import { ActivityTracker } from './activity.js';
 import { checkpointById } from './checkpoints.js';
+import { GeminiTutor } from './ai.js';
 
 const $ = id => document.getElementById(id);
 const store = new ProgressStore();
 const baseItems = flattenTasks();
 store.setTaskOrder(baseItems.map(x => x.key));
 const runner = new PythonRunner({ timeoutMs: 5000 });
+const reviewTutor = new GeminiTutor({ getApiKey: () => getStoredApiKey(), cooldownMs: 6000 });
+const reviewContexts = new Map();
 let ready = false;
 const CLASS_CODE_KEY = 'python_exam_trainer_class_code_v3';
 
@@ -61,6 +64,81 @@ function equalLines(a, b) {
 function formatError(e) {
   if (!e) return 'Ismeretlen hiba';
   return `${e.type || 'Hiba'}${e.line ? ` (${e.line}. sor)` : ''}: ${e.message || ''}`;
+}
+
+function commonExamDiagnostics(code, task, analysis) {
+  const messages = [];
+  const text = String(code || '');
+
+  if (/^\s*input\s*=/m.test(text)) {
+    messages.push('Az <code>input</code> a Python beépített bekérő függvényének neve. Ne használd változónévként. Helyette például <code>szam1 = ...</code> jellegű változónevet használj.');
+  }
+
+  if (/\b(?:int|float)\s*\(\s*["'][^"'\n]*[A-Za-zÁÉÍÓÖŐÚÜŰáéíóöőúüű][^"'\n]*["']\s*\)/.test(text)) {
+    messages.push('Az <code>int()</code>/<code>float()</code> itt egy feliratot próbál számmá alakítani. Bekérésnél a helyes gondolat: előbb <code>input(...)</code>, majd annak eredményét alakítjuk számmá.');
+  }
+
+  const requiredInputs = Math.max(0, ...(task.checks || [])
+    .filter(r => r.type === 'call' && r.name === 'input')
+    .map(r => Number(r.min || 1)));
+  const actualInputs = Number(analysis?.summary?.calls?.input || 0);
+  if (requiredInputs && actualInputs < requiredInputs) {
+    messages.push(`A feladat legalább ${requiredInputs} darab <code>input()</code> hívást kér, a kódban most ${actualInputs} található.`);
+  }
+
+  const requiredPrints = Math.max(0, ...(task.checks || [])
+    .filter(r => r.type === 'call' && r.name === 'print')
+    .map(r => Number(r.min || 1)));
+  const actualPrints = Number(analysis?.summary?.calls?.print || 0);
+  if (requiredPrints && actualPrints < requiredPrints) {
+    messages.push(`A feladat legalább ${requiredPrints} darab <code>print()</code> hívást kér, a kódban most ${actualPrints} található.`);
+  }
+
+  return messages;
+}
+
+function renderDiagnosticList(messages) {
+  if (!messages?.length) return '';
+  return `<div class="examDiagnosis"><strong>🔎 Mi a gond?</strong><ul>${messages.map(m => `<li>${m}</li>`).join('')}</ul></div>`;
+}
+
+async function explainExamTaskWithAi(examId, taskIndex, button) {
+  const ctx = reviewContexts.get(`${examId}:${taskIndex}`);
+  if (!ctx) return;
+  if (!getStoredApiKey()) {
+    alert('Az AI-magyarázathoz előbb add meg a Gemini API-kulcsodat a Tanulás oldalon.');
+    return;
+  }
+
+  button.disabled = true;
+  const original = button.textContent;
+  button.textContent = 'AI gondolkodik…';
+  const target = document.querySelector(`[data-ai-answer="${examId}-${taskIndex}"]`);
+  try {
+    const result = await reviewTutor.ask({
+      question: 'A vizsga már lezárult. Magyarázd el nagyon egyszerűen, konkrétan és lépésenként, mi volt a hibám ebben a feladatban. Ne csak a hibanevet mondd meg: mondd el, mit jelent és mi legyen a következő javítási lépés. A teljes kész megoldást ne írd le.',
+      lessonTitle: 'Vizsga utáni hibajavítás',
+      objective: 'A tanuló értse meg a hibát és önállóan tudja kijavítani.',
+      explanationText: '',
+      attempts: 1,
+      solutionAllowed: false,
+      taskText: ctx.task.text,
+      expectedExamples: [],
+      helpLevel: 3,
+      code: ctx.code,
+      diagnostic: ctx.diagnostics.join('\n')
+    });
+    target.className = 'examAiAnswer';
+    target.textContent = result.text;
+    const lessonId = ctx.task.lessonIds?.[0];
+    if (lessonId) store.appendSavedExplanation(lessonId, `Vizsga utáni AI-magyarázat – ${ctx.task.title}:\n${result.text}`);
+  } catch (err) {
+    target.className = 'examAiAnswer bad';
+    target.textContent = `AI-hiba: ${err?.message || err}`;
+  } finally {
+    button.disabled = false;
+    button.textContent = original;
+  }
 }
 
 function activeSession(examId) {
@@ -170,6 +248,7 @@ function startExam(id) {
     return;
   }
   body.classList.remove('hidden');
+  body.classList.remove('submitted');
 
   let session = activeSession(id);
   if (!session) {
@@ -203,22 +282,46 @@ function startExam(id) {
 async function scoreTask(task, code) {
   let score = 0;
   const details = [];
+  const diagnostics = [];
   const analysis = await runner.analyze(code);
-  if (!analysis.ok) return { score: 0, details: [`A kód nem elemezhető: ${formatError(analysis.error)}`] };
+  if (!analysis.ok) {
+    const msg = `A kód nem elemezhető: ${formatError(analysis.error)}`;
+    return { score: 0, details: [msg], diagnostics: [msg] };
+  }
+
+  diagnostics.push(...commonExamDiagnostics(code, task, analysis));
 
   for (const r of task.checks || []) {
     if (checkReq(analysis.summary, r)) {
       score += r.points;
       details.push(`✓ ${r.label}: +${r.points}`);
-    } else details.push(`✗ ${r.label}: 0/${r.points}`);
+    } else {
+      details.push(`✗ ${r.label}: 0/${r.points}`);
+      diagnostics.push(`Hiányzik vagy nem megfelelő: ${r.label}.`);
+    }
   }
+
+  let firstRuntimeDiagnosticAdded = false;
   for (const t of task.tests || []) {
     const res = await runner.execute(code, t.inputs || []);
     if (res.ok && equalLines(res.stdoutLines || [], t.expectedLines || [])) {
       score += t.points;
       details.push(`✓ Rejtett futási teszt: +${t.points}`);
-    } else details.push(`✗ Rejtett futási teszt: 0/${t.points}`);
+    } else {
+      details.push(`✗ Rejtett futási teszt: 0/${t.points}`);
+      if (!firstRuntimeDiagnosticAdded) {
+        if (!res.ok) {
+          diagnostics.push(`Futtatás közben hiba történt: ${formatError(res.error)}`);
+        } else {
+          const actual = (res.stdoutLines || []).join(' | ') || '(nincs kimenet)';
+          const expected = (t.expectedLines || []).join(' | ') || '(nincs kimenet)';
+          diagnostics.push(`A program lefutott, de a kimenet nem jó. Várt: ${expected}. Kapott: ${actual}.`);
+        }
+        firstRuntimeDiagnosticAdded = true;
+      }
+    }
   }
+
   for (const t of task.fileTests || []) {
     const readFiles = t.readFiles || Object.keys(t.expectedFiles || {});
     const res = await runner.executeWithFiles(code, t.inputs || [], t.files || {}, readFiles);
@@ -232,16 +335,28 @@ async function scoreTask(task, code) {
       details.push(`✓ Fájlteszt: +${t.points}`);
     } else {
       details.push(`✗ Fájlteszt: 0/${t.points}`);
+      if (!res.ok) diagnostics.push(`A fájlos futtatás hibával leállt: ${formatError(res.error)}`);
+      else diagnostics.push('A létrehozott fájl vagy a kiírt eredmény tartalma nem egyezik a feladattal.');
     }
   }
+
   for (const t of task.functionTests || []) {
     const res = await runner.functionTest(code, t.functionName, t.args || []);
     if (res.ok && JSON.stringify(res.actual) === JSON.stringify(t.expected)) {
       score += t.points;
       details.push(`✓ Függvényteszt ${t.functionName}(${(t.args || []).join(', ')}): +${t.points}`);
-    } else details.push(`✗ Függvényteszt ${t.functionName}(...): 0/${t.points}`);
+    } else {
+      details.push(`✗ Függvényteszt ${t.functionName}(...): 0/${t.points}`);
+      if (!res.ok) diagnostics.push(`A(z) ${t.functionName}() függvény futtatási hibát adott: ${formatError(res.error)}`);
+      else diagnostics.push(`A(z) ${t.functionName}() visszatérési értéke nem megfelelő.`);
+    }
   }
-  return { score: Math.min(task.points, score), details };
+
+  return {
+    score: Math.min(task.points, score),
+    details,
+    diagnostics: [...new Set(diagnostics)]
+  };
 }
 
 async function submitExam(ex) {
@@ -260,11 +375,22 @@ async function submitExam(ex) {
     store.saveExamDraft(ex.id, i, code);
     const r = await scoreTask(ex.tasks[i], code);
     total += r.score;
-    taskResults.push({ score: r.score, maxScore: ex.tasks[i].points });
+    taskResults.push({ score: r.score, maxScore: ex.tasks[i].points, diagnostics: r.diagnostics || [] });
     const box = body.querySelector(`[data-result="${ex.id}-${i}"]`);
-    box.className = 'feedback ' + (r.score === ex.tasks[i].points ? 'ok' : 'info');
-    box.innerHTML = `<strong>${r.score}/${ex.tasks[i].points} pont</strong><pre>${esc(r.details.join('\n'))}</pre>`;
+    const failed = r.score < ex.tasks[i].points;
+    box.className = 'feedback ' + (failed ? 'info' : 'ok');
+    reviewContexts.set(`${ex.id}:${i}`, {
+      task: ex.tasks[i],
+      code,
+      diagnostics: r.diagnostics || []
+    });
+    const aiButton = failed
+      ? `<button type="button" class="secondary examAiBtn" data-ai-review="${ex.id}-${i}">🤖 AI: magyarázd el, mi volt a gond</button><div class="hidden" data-ai-answer="${ex.id}-${i}"></div>`
+      : '';
+    box.innerHTML = `<strong>${r.score}/${ex.tasks[i].points} pont</strong><pre>${esc(r.details.join('\n'))}</pre>${renderDiagnosticList(r.diagnostics || [])}${aiButton}`;
     body.querySelector(`[data-code="${ex.id}-${i}"]`).disabled = true;
+    const aiBtn = box.querySelector('[data-ai-review]');
+    if (aiBtn) aiBtn.onclick = () => explainExamTaskWithAi(ex.id, i, aiBtn);
   }
 
   const max = ex.tasks.reduce((a, t) => a + t.points, 0);
