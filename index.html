@@ -74,6 +74,26 @@
     </aside>
 
     <main id="mainCard" class="card mainCard">
+      <section id="adminTestPanel" class="adminTestPanel hidden">
+        <div class="adminTestHead">
+          <div>
+            <strong>🧪 Oktatói lecketeszt mód</strong>
+            <div class="tiny">Bármelyik leckét és bármelyik 1/3–2/3–3/3 feladatot közvetlenül megnyithatod. Ez külön tesztprofil, nem számít bele tanulói haladásba és nem küld órai aktivitást Firebase-be.</div>
+          </div>
+          <a class="ghost testExitLink" href="./">Kilépés a teszt módból</a>
+        </div>
+        <div class="adminTestControls">
+          <label>Lecke
+            <select id="testLessonSelect"></select>
+          </label>
+          <label>Feladat / szint
+            <select id="testTaskSelect"></select>
+          </label>
+          <button id="testJumpBtn" class="primary" type="button">Ugrás</button>
+          <button id="testResetTaskBtn" class="danger" type="button">Aktuális teszt törlése</button>
+        </div>
+      </section>
+
       <div class="lessonTop">
         <div class="buttonRow compact">
           <span id="lessonBadge" class="badge">1. lecke</span>
