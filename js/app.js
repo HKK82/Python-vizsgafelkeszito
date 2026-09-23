@@ -5,6 +5,7 @@ import { GeminiTutor } from './ai.js';
 import { ActivityTracker } from './activity.js?v=20260923-sessionfix1';
 import { cloudConfigured } from './firebase-service.js';
 import { checkpointAfterLesson, checkpointRequiredBeforeLesson } from './checkpoints.js';
+import { compareOutput, formatOutputWarnings } from './output-check.js?v=20260923-outputtol1';
 
 const items = flattenTasks();
 const store = new ProgressStore();
@@ -578,11 +579,6 @@ function requirementLabel(req) {
   return map[req.name] || req.name;
 }
 
-function equalLines(actual, expected) {
-  if (actual.length !== expected.length) return false;
-  return actual.every((line, i) => line === String(expected[i]));
-}
-
 function formatError(error) {
   if (!error) return 'Ismeretlen Python-hiba.';
   const lineInfo = error.line ? ` a(z) ${error.line}. sorban` : '';
@@ -727,6 +723,8 @@ async function checkTask() {
       return;
     }
 
+    const outputWarnings = [];
+
     for (const test of task.tests || []) {
       const result = await runner.execute(code, test.inputs || []);
       if (!result.ok) {
@@ -734,11 +732,13 @@ async function checkTask() {
         failedAttempt(`<strong>A program hibával leállt.</strong><pre>${escapeHtml(diagnostic)}</pre>`, diagnostic);
         return;
       }
-      if (!equalLines(result.stdoutLines || [], test.expectedLines || [])) {
+      const outputCheck = compareOutput(result.stdoutLines || [], test.expectedLines || [], test.inputs || []);
+      if (!outputCheck.ok) {
         const diagnostic = formatTestDiagnostic(test.inputs || [], test.expectedLines || [], result.stdoutLines || []);
-        failedAttempt(`<strong>A program lefutott, de a kimenet nem egyezik a feladattal.</strong><pre>${escapeHtml(diagnostic)}</pre>`, diagnostic);
+        failedAttempt(`<strong>A program lefutott, de a lényegi kimenet még nem megfelelő.</strong><br>${escapeHtml(outputCheck.reason || '')}<pre>${escapeHtml(diagnostic)}</pre>`, diagnostic);
         return;
       }
+      if (outputCheck.warning) outputWarnings.push(...formatOutputWarnings(outputCheck.warnings));
     }
 
     for (const test of task.functionTests || []) {
@@ -763,11 +763,13 @@ async function checkTask() {
         failedAttempt(`<strong>A fájlos teszt futás közben hibát talált.</strong><pre>${escapeHtml(diagnostic)}</pre>`, diagnostic);
         return;
       }
-      if (!equalLines(result.stdoutLines || [], test.expectedLines || [])) {
+      const outputCheck = compareOutput(result.stdoutLines || [], test.expectedLines || [], test.inputs || []);
+      if (!outputCheck.ok) {
         const diagnostic = formatTestDiagnostic(test.inputs || [], test.expectedLines || [], result.stdoutLines || []);
-        failedAttempt(`<strong>A fájlos feladat képernyőkimenete még nem jó.</strong><pre>${escapeHtml(diagnostic)}</pre>`, diagnostic);
+        failedAttempt(`<strong>A fájlos feladat lényegi képernyőkimenete még nem jó.</strong><br>${escapeHtml(outputCheck.reason || '')}<pre>${escapeHtml(diagnostic)}</pre>`, diagnostic);
         return;
       }
+      if (outputCheck.warning) outputWarnings.push(...formatOutputWarnings(outputCheck.warnings));
       for (const [name, expected] of Object.entries(test.expectedFiles || {})) {
         const actual = String(result.files?.[name] ?? '').replace(/\r\n/g, '\n');
         const wanted = String(expected).replace(/\r\n/g, '\n');
@@ -809,9 +811,12 @@ async function checkTask() {
     $('nextBtn').classList.remove('hidden');
     renderSidebar();
     const usedSolution = store.hasViewedSolution(key);
-    showFeedback('ok', masteryReview
+    const textWarningHtml = outputWarnings.length
+      ? `<div class="feedback info" style="margin-top:10px"><strong>⚠ Szöveges eltérés – továbbléphetsz.</strong><br>A programozási/logikai rész helyes. A kiírt feliratban van eltérés, ezért ezt csak jelzem, nem számít sikertelen próbának.<pre>${escapeHtml(outputWarnings.join('\n'))}</pre></div>`
+      : '';
+    showFeedback('ok', (masteryReview
       ? '<strong>✓ 2/2 egymást követő önálló siker.</strong><br>Ez a készség most újra stabil. Ha minden kijelölt gyenge területet teljesítettél, a kisvizsga újrapróbálható.'
-      : `<strong>✓ Helyes megoldás.</strong><br>${usedSolution ? 'A mintát már láttad, ezért a következő feladatnál próbáld teljesen önállóan.' : 'Működő kóddal bizonyítottad, hogy ezt a lépést érted.'}`);
+      : `<strong>✓ Helyes programozási megoldás.</strong><br>${usedSolution ? 'A mintát már láttad, ezért a következő feladatnál próbáld teljesen önállóan.' : 'A programlogika és a lényegi eredmények helyesek.'}`) + textWarningHtml);
     addTeacherMessage(usedSolution ? 'Sikerült. A következő feladat hasonló gondolkodást kér, de próbáld a mintamegoldás nélkül felépíteni.' : 'Nagyon jó. Nem csak azt mondtad, hogy érted: a programtesztek szerint működik a megoldásod. Mehetünk tovább.');
     addTeacherMessage(`✅ ${successCoachText(currentItem().lesson.id)}`);
     tracker.flush().catch(() => {});
