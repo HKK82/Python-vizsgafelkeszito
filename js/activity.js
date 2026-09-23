@@ -1,4 +1,4 @@
-import { cloudConfigured, joinClassAsStudent, updateStudentPresence, markStudentOffline } from './firebase-service.js';
+import { cloudConfigured, joinClassAsStudent, updateStudentPresence, markStudentOffline } from './firebase-service.js?v=20260923-sessionfix1';
 
 export class ActivityTracker {
   constructor({ getProgressSnapshot, flushEveryMs = 20000, idleAfterMs = 90000 } = {}) {
