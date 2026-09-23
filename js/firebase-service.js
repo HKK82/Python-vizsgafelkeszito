@@ -38,12 +38,28 @@ export function cloudConfigured() {
   return isFirebaseConfigured();
 }
 
-export async function signInStudentAnonymously() {
+function isPermissionDenied(err) {
+  const code = String(err?.code || '').toLowerCase();
+  const message = String(err?.message || err || '').toLowerCase();
+  return code.includes('permission-denied') ||
+    code.includes('permission_denied') ||
+    message.includes('permission denied') ||
+    message.includes('permission_denied');
+}
+
+export async function signInStudentAnonymously({ forceFresh = false } = {}) {
   const s = await init();
   if (!s) throw new Error('A Firebase még nincs beállítva.');
   await s.f.setPersistence(s.auth, s.f.browserSessionPersistence);
-  if (s.auth.currentUser && s.auth.currentUser.isAnonymous) return s.auth.currentUser;
-  if (s.auth.currentUser && !s.auth.currentUser.isAnonymous) await s.f.signOut(s.auth);
+
+  if (s.auth.currentUser && s.auth.currentUser.isAnonymous && !forceFresh) {
+    return s.auth.currentUser;
+  }
+
+  if (s.auth.currentUser) {
+    try { await s.f.signOut(s.auth); } catch {}
+  }
+
   const cred = await s.f.signInAnonymously(s.auth);
   return cred.user;
 }
@@ -137,11 +153,7 @@ export async function reopenClassSession(code) {
   try { await rememberTeacherClassSession(classCode); } catch (err) { console.warn('Óraelőzmény-index nem frissült:', err); }
 }
 
-export async function joinClassAsStudent(code, name) {
-  const s = await init();
-  if (!s) throw new Error('A Firebase még nincs beállítva.');
-  const classCode = cleanCode(code);
-  const user = await signInStudentAnonymously();
+async function joinClassAsStudentOnce(s, classCode, name, user) {
   const meta = await getClassMeta(classCode);
   if (!meta) throw new Error('Nincs ilyen órakód.');
   if (!meta.open) throw new Error('Ez az óra már le van zárva.');
@@ -163,6 +175,26 @@ export async function joinClassAsStudent(code, name) {
   const seenRef = s.f.ref(s.db, `classes/${classCode}/students/${user.uid}/lastSeen`);
   await s.f.onDisconnect(seenRef).set(s.f.serverTimestamp());
   return { code: classCode, uid: user.uid, meta, ref: studentRef, existing };
+}
+
+export async function joinClassAsStudent(code, name) {
+  const s = await init();
+  if (!s) throw new Error('A Firebase még nincs beállítva.');
+  const classCode = cleanCode(code);
+
+  let user = await signInStudentAnonymously();
+  try {
+    return await joinClassAsStudentOnce(s, classCode, name, user);
+  } catch (err) {
+    if (!isPermissionDenied(err)) throw err;
+
+    // Egy régi/beragadt anonim Firebase-munkamenet ne tudja blokkolni az órába
+    // való visszalépést. A helyi tanulói haladás érintetlen marad; csak a
+    // Firebase anonim munkamenetet cseréljük, majd egyszer újrapróbáljuk.
+    console.warn('Firebase jogosultsági hiba; anonim munkamenet újraépítése és újrapróbálás.', err);
+    user = await signInStudentAnonymously({ forceFresh: true });
+    return await joinClassAsStudentOnce(s, classCode, name, user);
+  }
 }
 
 export async function updateStudentPresence(code, uid, patch) {
