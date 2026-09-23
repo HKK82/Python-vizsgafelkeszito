@@ -2,7 +2,7 @@ import { lessons, totalTasks, flattenTasks } from './lessons.js';
 import { ProgressStore, getStoredApiKey, storeApiKey, clearApiKey, isApiKeyRemembered } from './storage.js';
 import { PythonRunner } from './python-runner.js';
 import { GeminiTutor } from './ai.js';
-import { ActivityTracker } from './activity.js';
+import { ActivityTracker } from './activity.js?v=20260923-sessionfix1';
 import { cloudConfigured } from './firebase-service.js';
 import { checkpointAfterLesson, checkpointRequiredBeforeLesson } from './checkpoints.js';
 
@@ -27,6 +27,7 @@ const TEST_PROFILE_NAME = '🧪 Oktatói teszt';
 const testRequested = new URLSearchParams(location.search).get('test') === '1';
 const testAuthorizedUntil = Number(localStorage.getItem(TEACHER_TEST_AUTH_KEY) || 0);
 const TEST_MODE = testRequested && testAuthorizedUntil > Date.now();
+const RESUME_AFTER_EXAM = new URLSearchParams(location.search).get('resume') === '1';
 
 const tracker = new ActivityTracker({
   getProgressSnapshot: () => {
@@ -1008,6 +1009,57 @@ async function begin(useAi) {
   tracker.flush().catch(() => {});
 }
 
+async function resumeAfterExam() {
+  const p = store.getCurrentProfile();
+  if (!p) {
+    openSetup();
+    return false;
+  }
+
+  aiEnabled = !!getStoredApiKey();
+  const classCode = sessionStorage.getItem(CLASS_CODE_KEY) || '';
+
+  if (classCode) {
+    updateCloudStatus({ error: 'kapcsolódás…' });
+    try {
+      const joined = await tracker.join(classCode, p.displayName);
+      if (!joined.connected) updateCloudStatus({ error: joined.reason || 'nem kapcsolódott' });
+    } catch (err) {
+      // A vizsga utáni visszatérés akkor se akadjon el, ha a felhős kapcsolat
+      // pillanatnyilag nem épül fel. A helyi haladásból folytatjuk, az órához
+      // később az API/profil panelből újra lehet kapcsolódni.
+      console.warn('Vizsga utáni automatikus óra-visszakapcsolódás sikertelen:', err);
+      updateCloudStatus({ error: 'helyi mód – újracsatlakozás szükséges' });
+    }
+  } else {
+    updateCloudStatus();
+  }
+
+  $('setupOverlay').classList.add('hidden');
+  tutor.clearHistory();
+  lastAiAnswer = '';
+  $('saveAiNoteBtn').disabled = true;
+  $('saveAiNoteBtn').textContent = '📝 AI-magyarázatok automatikusan mentve a jegyzetbe';
+
+  const frontier = store.repairFrontier(totalTasks);
+  const last = store.getLastViewed();
+  currentIndex = Math.min(last, frontier >= totalTasks ? totalTasks - 1 : frontier);
+
+  const currentLessonId = items[currentIndex]?.lesson?.id || 1;
+  const blocking = checkpointRequiredBeforeLesson(currentLessonId);
+  if (blocking && !store.isCheckpointPassed(blocking.id)) {
+    const indices = items.map((x, i) => x.lesson.id === blocking.afterLesson ? i : -1).filter(i => i >= 0);
+    if (indices.length) currentIndex = indices[indices.length - 1];
+  }
+
+  renderTask();
+  tracker.flush().catch(() => {});
+
+  // A resume paraméter csak a vizsga utáni egyszeri visszatérésre szolgál.
+  try { history.replaceState({}, '', './index.html'); } catch {}
+  return true;
+}
+
 async function leaveClass() {
   const code = sessionStorage.getItem(CLASS_CODE_KEY) || '';
   if (!code && !tracker.classCode) return;
@@ -1141,13 +1193,15 @@ async function boot() {
     if (testRequested && !TEST_MODE) {
       alert('A lecketeszt módot a tanári oldalról kell megnyitni Google-belépés után.');
     }
-    openSetup();
+    if (RESUME_AFTER_EXAM && store.getCurrentProfile()) $('setupOverlay').classList.add('hidden');
+    else openSetup();
   }
 
   try {
     await runner.start();
     updatePythonStatus('ready');
     if (TEST_MODE) renderTask();
+    else if (RESUME_AFTER_EXAM && store.getCurrentProfile()) await resumeAfterExam();
   } catch (err) {
     updatePythonStatus('error');
     showFeedback('bad', `Nem sikerült betölteni a Python környezetet: ${escapeHtml(err?.message || err)}`);
