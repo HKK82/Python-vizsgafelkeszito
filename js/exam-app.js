@@ -2,9 +2,9 @@ import { exams } from './exams.js';
 import { flattenTasks, totalTasks } from './lessons.js';
 import { ProgressStore, getStoredApiKey } from './storage.js';
 import { PythonRunner } from './python-runner.js';
-import { ActivityTracker } from './activity.js';
+import { ActivityTracker } from './activity.js?v=20260923-sessionfix1';
 import { checkpointById } from './checkpoints.js';
-import { logStudentExamAttempt } from './firebase-service.js';
+import { logStudentExamAttempt } from './firebase-service.js?v=20260923-sessionfix1';
 import { GeminiTutor } from './ai.js';
 
 const $ = id => document.getElementById(id);
@@ -337,7 +337,7 @@ function startExam(id) {
   const readiness = checkpointReadiness(ex);
   if (!readiness.allowed) {
     body.classList.remove('hidden');
-    body.innerHTML = `<div class="feedback info"><strong>Célzott gyakorlás szükséges.</strong><br>${esc(readiness.reason)}<br><br><a class="buttonLike" href="./index.html">Vissza a Tanuláshoz</a></div>`;
+    body.innerHTML = `<div class="feedback info"><strong>Célzott gyakorlás szükséges.</strong><br>${esc(readiness.reason)}<br><br><a class="buttonLike" href="./index.html?resume=1">Vissza a Tanuláshoz</a></div>`;
     return;
   }
   body.classList.remove('hidden');
@@ -573,7 +573,7 @@ function renderAfterSubmit(ex, total, max, taskResults) {
   const state = store.getCheckpoint(ex.checkpointId || ex.id);
   if (state?.passed) {
     h.className = 'feedback ok';
-    h.innerHTML = `<strong>✓ Kisvizsga teljesítve: ${total}/${max} pont (${pct}%).</strong><br>Megnyílt a következő tananyagi blokk.<br><br><a class="buttonLike" href="./index.html">Folytatás a következő leckével →</a>`;
+    h.innerHTML = `<strong>✓ Kisvizsga teljesítve: ${total}/${max} pont (${pct}%).</strong><br>Megnyílt a következő tananyagi blokk.<br><br><a class="buttonLike" href="./index.html?resume=1">Folytatás a következő leckével →</a>`;
   } else {
     const weak = state?.weakLessonIds || [];
     const keys = state?.reviewTaskKeys || [];
@@ -583,7 +583,7 @@ function renderAfterSubmit(ex, total, max, taskResults) {
       Célzottan újra kell gyakorolnod: <strong>${weak.length ? weak.map(x => x + '. lecke').join(', ') : 'a leggyengébb területet'}</strong>.<br>
       Az érintett 3/3 önálló feladat(ok)nál <strong>2 egymást követő siker</strong> szükséges. Ezután új kisvizsga következik.<br>
       <span class="tiny">Újranyitott feladatok: ${esc(keys.join(', '))}</span><br><br>
-      <a class="buttonLike" href="./index.html">Vissza a célzott gyakorláshoz →</a>`;
+      <a class="buttonLike" href="./index.html?resume=1">Vissza a célzott gyakorláshoz →</a>`;
   }
   card.appendChild(h);
 }
