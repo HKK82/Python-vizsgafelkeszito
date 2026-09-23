@@ -6,6 +6,7 @@ import { ActivityTracker } from './activity.js?v=20260923-sessionfix1';
 import { checkpointById } from './checkpoints.js';
 import { logStudentExamAttempt } from './firebase-service.js?v=20260923-sessionfix1';
 import { GeminiTutor } from './ai.js';
+import { compareOutput, formatOutputWarnings } from './output-check.js?v=20260923-outputtol1';
 
 const $ = id => document.getElementById(id);
 const store = new ProgressStore();
@@ -61,10 +62,6 @@ function checkReq(summary, r) {
     return Number.isInteger(a) && a >= (r.minArgs ?? 0);
   }
   return true;
-}
-
-function equalLines(a, b) {
-  return a.length === b.length && a.every((x, i) => x === String(b[i]));
 }
 
 function formatError(e) {
@@ -397,9 +394,19 @@ async function scoreTask(task, code) {
   let firstRuntimeDiagnosticAdded = false;
   for (const t of task.tests || []) {
     const res = await runner.execute(code, t.inputs || []);
-    if (res.ok && equalLines(res.stdoutLines || [], t.expectedLines || [])) {
+    const outputCheck = res.ok
+      ? compareOutput(res.stdoutLines || [], t.expectedLines || [], t.inputs || [])
+      : { ok: false, warning: false, warnings: [] };
+
+    if (res.ok && outputCheck.ok) {
       score += t.points;
       details.push(`✓ Rejtett futási teszt: +${t.points}`);
+      if (outputCheck.warning) {
+        details.push('⚠ Szöveges eltérés: pontlevonás nélkül.');
+        diagnostics.push(...formatOutputWarnings(outputCheck.warnings).map(x =>
+          `Szöveges figyelmeztetés (nem pontlevonás): ${x}`
+        ));
+      }
     } else {
       details.push(`✗ Rejtett futási teszt: 0/${t.points}`);
       if (!firstRuntimeDiagnosticAdded) {
@@ -408,7 +415,7 @@ async function scoreTask(task, code) {
         } else {
           const actual = (res.stdoutLines || []).join(' | ') || '(nincs kimenet)';
           const expected = (t.expectedLines || []).join(' | ') || '(nincs kimenet)';
-          diagnostics.push(`A program lefutott, de a kimenet nem jó. Várt: ${expected}. Kapott: ${actual}.`);
+          diagnostics.push(`A lényegi programkimenet nem jó. ${outputCheck.reason || ''} Várt: ${expected}. Kapott: ${actual}.`);
         }
         firstRuntimeDiagnosticAdded = true;
       }
@@ -418,7 +425,10 @@ async function scoreTask(task, code) {
   for (const t of task.fileTests || []) {
     const readFiles = t.readFiles || Object.keys(t.expectedFiles || {});
     const res = await runner.executeWithFiles(code, t.inputs || [], t.files || {}, readFiles);
-    const stdoutOk = res.ok && equalLines(res.stdoutLines || [], t.expectedLines || []);
+    const outputCheck = res.ok
+      ? compareOutput(res.stdoutLines || [], t.expectedLines || [], t.inputs || [])
+      : { ok: false, warning: false, warnings: [] };
+    const stdoutOk = res.ok && outputCheck.ok;
     const filesOk = Object.entries(t.expectedFiles || {}).every(([name, expected]) => {
       const actual = res.files?.[name];
       return String(actual ?? '').replace(/\r\n/g, '\n') === String(expected).replace(/\r\n/g, '\n');
@@ -426,6 +436,12 @@ async function scoreTask(task, code) {
     if (stdoutOk && filesOk) {
       score += t.points;
       details.push(`✓ Fájlteszt: +${t.points}`);
+      if (outputCheck.warning) {
+        details.push('⚠ Képernyőszöveg-eltérés: pontlevonás nélkül.');
+        diagnostics.push(...formatOutputWarnings(outputCheck.warnings).map(x =>
+          `Szöveges figyelmeztetés (nem pontlevonás): ${x}`
+        ));
+      }
     } else {
       details.push(`✗ Fájlteszt: 0/${t.points}`);
       if (!res.ok) diagnostics.push(`A fájlos futtatás hibával leállt: ${formatError(res.error)}`);
