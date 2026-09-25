@@ -61,6 +61,18 @@ function currentItem() {
   return items[currentIndex];
 }
 
+function continuationIndex() {
+  const frontier = store.repairFrontier(totalTasks);
+  if (frontier >= totalTasks) return Math.max(0, totalTasks - 1);
+  return Math.max(0, frontier);
+}
+
+function continuationLabel(index = continuationIndex()) {
+  const item = items[Math.max(0, Math.min(index, items.length - 1))];
+  if (!item) return '';
+  return `${item.lesson.id}. lecke – ${item.taskIndex + 1}/${item.lesson.tasks.length}. feladat`;
+}
+
 function microCoachText(lessonId) {
   const tips = {
     1: '<strong>Jegyezd meg:</strong> ha konkrét szöveget írsz ki, idézőjel kell: <code>print("Szia")</code>.',
@@ -999,9 +1011,8 @@ async function begin(useAi) {
   lastAiAnswer = '';
   $('saveAiNoteBtn').disabled = true;
   $('saveAiNoteBtn').textContent = '📝 AI-magyarázatok automatikusan mentve a jegyzetbe';
-  const frontier = store.repairFrontier(totalTasks);
-  const last = store.getLastViewed();
-  currentIndex = Math.min(last, frontier >= totalTasks ? totalTasks - 1 : frontier);
+  const hadPreviousProgress = store.completedCount() > 0;
+  currentIndex = continuationIndex();
 
   // Régebbi profilnál se lehessen egy újonnan bevezetett kisvizsgát átugrani.
   const currentLessonId = items[currentIndex]?.lesson?.id || 1;
@@ -1011,6 +1022,9 @@ async function begin(useAi) {
     if (indices.length) currentIndex = indices[indices.length - 1];
   }
   renderTask();
+  if (hadPreviousProgress) {
+    addTeacherMessage(`↪ Folytatás a korábbi haladásból: ${continuationLabel(currentIndex)}. Az új órakód csak az aktuális órai követést indítja újra; a kész feladataid és kisvizsgáid megmaradtak.`);
+  }
   tracker.flush().catch(() => {});
 }
 
@@ -1046,9 +1060,7 @@ async function resumeAfterExam() {
   $('saveAiNoteBtn').disabled = true;
   $('saveAiNoteBtn').textContent = '📝 AI-magyarázatok automatikusan mentve a jegyzetbe';
 
-  const frontier = store.repairFrontier(totalTasks);
-  const last = store.getLastViewed();
-  currentIndex = Math.min(last, frontier >= totalTasks ? totalTasks - 1 : frontier);
+  currentIndex = continuationIndex();
 
   const currentLessonId = items[currentIndex]?.lesson?.id || 1;
   const blocking = checkpointRequiredBeforeLesson(currentLessonId);
@@ -1095,9 +1107,9 @@ async function importProgress(file) {
     const payload = JSON.parse(text);
     const profile = store.importProfile(payload);
     $('setupOverlay').classList.add('hidden');
-    currentIndex = Math.min(profile.lastViewed || 0, store.getFrontier(totalTasks));
+    currentIndex = continuationIndex();
     renderTask();
-    addTeacherMessage('A mentett haladást sikeresen betöltöttük.');
+    addTeacherMessage(`A mentett haladást sikeresen betöltöttük. Folytatás innen: ${continuationLabel(currentIndex)}.`);
   } catch (err) {
     alert(`Nem sikerült betölteni a haladást: ${err?.message || err}`);
   }
