@@ -22,6 +22,7 @@
       <label for="classCodeInput">Órakód <span class="muted">(opcionális – ha a tanár élőben követi az órát)</span></label>
       <input id="classCodeInput" type="text" autocomplete="off" spellcheck="false" placeholder="pl. PY-7K3MZ">
       <p class="tiny">Órakóddal az oktató az aktivitási állapotot (aktív / inaktív / háttér / offline), az aktuális feladatot, a sikertelen próbálkozások számát, a haladást, valamint a futtatások, ellenőrzések és tippek számlálóit látja. A Python-kódodat, a Gemini API-kulcsodat, billentyűleütéseket, képernyőképet és böngészési előzményt nem küldünk fel.</p>
+      <p class="tiny"><strong>Folytatás következő órán:</strong> ugyanazt a tanulói profilt válaszd. Új órakód mellett is automatikusan az első még befejezetlen feladatodnál folytatod; a korábbi haladásod és kisvizsgáid nem nullázódnak.</p>
 
       <label for="apiKeyInput">Saját Gemini API-kulcs <span class="muted">(opcionális, AI-segítséghez)</span></label>
       <input id="apiKeyInput" type="password" autocomplete="off" spellcheck="false" placeholder="AIza...">
@@ -188,6 +189,6 @@
     </aside>
   </div>
 
-  <script type="module" src="./js/app.js?v=20260923-outputtol1"></script>
+  <script type="module" src="./js/app.js?v=20260925-continuation1"></script>
 </body>
 </html>
